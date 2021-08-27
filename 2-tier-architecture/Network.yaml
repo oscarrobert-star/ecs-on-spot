@@ -1,0 +1,226 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: CFN 201 Workshop - Amazon VPC template. (uksb-1qfk6uban)
+
+Parameters:
+  AvailabilityZones:
+    Type: List<AWS::EC2::AvailabilityZone::Name>
+    Description: The list of Availability Zones to use for the subnets in the VPC.
+
+  VPCName:
+    Type: String
+    Description: The name of the VPC.
+    Default: cfn-workshop-vpc
+
+  VPCCidr:
+    Type: String
+    Description: The CIDR block for the VPC.
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.0.0/16
+
+  PublicSubnet1Cidr:
+    Type: String
+    Description: The CIDR block for the public subnet located in Availability Zone 1.
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.0.0/24
+
+  PublicSubnet2Cidr:
+    Type: String
+    Description: The CIDR block for the public subnet located in Availability Zone 2.
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.1.0/24
+
+  PrivateSubnet1Cidr:
+    Type: String
+    Description: The CIDR block for the public subnet located in Availability Zone 1.
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.100.0/24
+
+  PrivateSubnet2Cidr:
+    Type: String
+    Description: The CIDR block for the public subnet located in Availability Zone 2.
+    AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+    Default: 10.0.101.0/24  
+
+Resources:
+  VPC: #creating a VPC
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VPCCidr
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Ref VPCName
+
+  FrontEndSubnet1: #creating front-end subnet
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref PublicSubnet1Cidr
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !Ref AvailabilityZones]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: FrontEnd-Subnet1
+        - Key: subnet-type
+          Value: Public  
+
+  FrontEndSubnet2: #creating front-end subnet
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: !Ref PublicSubnet2Cidr
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !Ref AvailabilityZones]
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: FrontEnd-Subnet2
+        - Key: subnet-type
+          Value: Public        
+
+  BackEndSubnet1: #creating back-end subnet
+    Type: AWS::EC2::Subnet
+    Properties: 
+      CidrBlock: !Ref PrivateSubnet1Cidr
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [0, !Ref AvailabilityZones]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: BackEnd-Subnet1
+        - Key: subnet-type
+          Value: Private
+
+  BackEndSubnet2: #creating back-end subnet
+    Type: AWS::EC2::Subnet
+    Properties: 
+      CidrBlock: !Ref PrivateSubnet2Cidr
+      VpcId: !Ref VPC
+      AvailabilityZone: !Select [1, !Ref AvailabilityZones]
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: BackEnd-Subnet2
+        - Key: subnet-type
+          Value: Private          
+
+  VPCPublicRouteTable: #creating a public route table
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: Public-rt
+
+  VPCPrivateRouteTable: #creating a private route table
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: Private-rt    
+
+  VPCIGW: #creating an Internet gateway
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: VPCIGW
+
+  VPCGWAttachment: #attaching IGW to the vpc
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId:
+        Ref: VPC
+      InternetGatewayId:
+        Ref: VPCIGW
+
+
+  PubicRoute: #associate  IGW to public rt
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref VPCPublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref VPCIGW
+    DependsOn:
+      - VPCGWAttachment
+
+  FrontEndSubnet1RouteAssociation: #associate frontend with public rt
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VPCPublicRouteTable
+      SubnetId:
+        Ref: FrontEndSubnet1
+
+  FrontEndSubnet2RouteAssociation: #associate frontend with public rt
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VPCPublicRouteTable
+      SubnetId:
+        Ref: FrontEndSubnet2
+
+  BackEndSubnet1RouteAssociation: #associate backend with private rt
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VPCPrivateRouteTable
+      SubnetId:
+        Ref: BackEndSubnet1
+
+  BackEndSubnet2RouteAssociation: #associate backend with private rt
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: VPCPrivateRouteTable
+      SubnetId:
+        Ref: BackEndSubnet2
+
+  NAT: #Adding NAT gateway
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+         Fn::GetAtt:
+         - NatGatewayEIP
+         - AllocationId
+      SubnetId:
+         Ref: FrontEndSubnet1
+      Tags:
+        - Key: Name
+          Value: VPC-NAT-Gateway
+
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    Properties: 
+      Domain: vpc
+    DependsOn: VPCGWAttachment
+
+#edit rout table routes
+#Add VPN gateway
+#Add VPC endpoint
+
+
+
+
+Outputs:
+  VpcId:
+    Value: !Ref VPC
+    Export:
+      Name: cfn-workshop-VpcId
+
+  FrontEndSubnet1:
+    Value: !Ref FrontEndSubnet1
+    Export:
+      Name: cfn-workshop-FrontEndSubnet1
+
+  FrontEndSubnet2:
+    Value: !Ref FrontEndSubnet2
+    Export:
+      Name: cfn-workshop-FrontEndSubnet2
