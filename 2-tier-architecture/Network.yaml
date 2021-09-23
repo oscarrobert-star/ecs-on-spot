@@ -1,10 +1,10 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: CFN 201 Workshop - Amazon VPC template. (uksb-1qfk6uban)
+Description: Nested stack - The VPC template. 
 
 Parameters:
-  AvailabilityZones:
-    Type: List<AWS::EC2::AvailabilityZone::Name>
-    Description: The list of Availability Zones to use for the subnets in the VPC.
+  # AvailabilityZones:
+  #   Type: List<AWS::EC2::AvailabilityZone::Name>
+  #   Description: The list of Availability Zones to use for the subnets in the VPC.
 
   VPCName:
     Type: String
@@ -63,7 +63,9 @@ Resources:
     Properties:
       CidrBlock: !Ref PublicSubnet1Cidr
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [0, !Ref AvailabilityZones]
+      AvailabilityZone: !Select 
+       - 0
+       - Fn::GetAZs: !Ref 'AWS::Region'
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
@@ -76,7 +78,9 @@ Resources:
     Properties:
       CidrBlock: !Ref PublicSubnet2Cidr
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [1, !Ref AvailabilityZones]
+      AvailabilityZone: !Select 
+       - 0
+       - Fn::GetAZs: !Ref 'AWS::Region'
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
@@ -89,7 +93,9 @@ Resources:
     Properties: 
       CidrBlock: !Ref PrivateSubnet1Cidr
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [0, !Ref AvailabilityZones]
+      AvailabilityZone: !Select 
+       - 1
+       - Fn::GetAZs: !Ref 'AWS::Region'
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
@@ -102,7 +108,9 @@ Resources:
     Properties: 
       CidrBlock: !Ref PrivateSubnet2Cidr
       VpcId: !Ref VPC
-      AvailabilityZone: !Select [1, !Ref AvailabilityZones]
+      AvailabilityZone: !Select 
+       - 1
+       - Fn::GetAZs: !Ref 'AWS::Region'
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
@@ -140,7 +148,6 @@ Resources:
         Ref: VPC
       InternetGatewayId:
         Ref: VPCIGW
-
 
   PubicRoute: #associate  IGW to public rt
     Type: AWS::EC2::Route
@@ -202,7 +209,13 @@ Resources:
       Domain: vpc
     DependsOn: VPCGWAttachment
 
-#edit rout table routes
+  PrivateRoute: #edit rout table routes to associate NAT gateway
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref VPCPrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NAT
+
 #Add VPN gateway
 #Add VPC endpoint
 

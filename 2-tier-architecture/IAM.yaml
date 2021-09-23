@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Nested stack - The IAM template.
+
+Resources:
+  SSMIAMRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+
+  SSMInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref SSMIAMRole
+
+  UserGroup:
+    Type: AWS::IAM::Group 
+    Properties:
+      GroupName: Dev-users
+      Path: "/groups/"
+
+  EC2SSMAccesspolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      #PolicyName: EC2-SSM-Access 
+      PolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - ssm:StartSession
+          - ssm:SendCommand
+          Resource: !Sub 'arn:aws:ec2:*:${AWS::AccountId}:instance/*'  
+
+        - Effect: Allow
+          Action:   
+          - ssm:GetConnectionStatus
+          - ssm:DescribeInstanceInformation
+          Resource: "*"
+
+        - Effect: Allow
+          Action:
+          - ssm:TerminateSession
+          - ssm:ResumeSession
+          Resource: arn:aws:ssm:*:*:session/${aws:username}-*
+
+        - Effect: Allow
+          Action:
+          - ssm:StartSession
+          Resource:
+          - !Sub 'arn:aws:ec2:*:${AWS::AccountId}:instance/*'
+          - arn:aws:ssm:*:*:document/AWS-StartSSHSession    
+
+        - Effect: Allow
+          Action: 
+          - ec2:Describe*
+          Resource: "*"  
+
+      Groups:
+       - !Ref UserGroup 
+    DependsOn: UserGroup     
+
+Outputs:
+  SSMInstanceProfile:
+    Value: !Ref SSMInstanceProfile
+    Export: 
+      Name: SSMInstanceProfile
+
+  UserGroup:
+    Value: !Ref UserGroup
+    Export: 
+      Name: Dev-Group
