@@ -7,10 +7,11 @@ Parameters:
     ConstraintDescription: Bucket name can include numbers, lowercase letters, uppercase letters, periods (.), and hyphens (-). It cannot start or end with a hyphen (-).
     Description: S3 bucket name for the Nested Stacks. S3 bucket name can include numbers, lowercase letters, uppercase letters, and hyphens (-). It cannot start or end with a hyphen (-).
     Type: String
+    Default: cf-templates-i6un17enzw8m-us-west-2
 
-  AvailabilityZones:
-    Type: List<AWS::EC2::AvailabilityZone::Name>
-    Description: The list of Availability Zones to use for the subnets in the VPC.
+  # AvailabilityZones:
+  #   Type: List<AWS::EC2::AvailabilityZone::Name>
+  #   Description: The list of Availability Zones to use for the subnets in the VPC.
 
   VPCName:
     Type: String
@@ -52,17 +53,24 @@ Parameters:
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
     Default: 10.0.101.0/24  
 
+  AmiID:
+    Type: AWS::EC2::Image::Id
+    Description: 'The ID of the AMI.' # uses the latest ami id  
+    Default: 'ami-00399ec92321828f5' #ami-00399ec92321828f5
+
+  EC2InstanceType:
+    Type: String
+    Description: Provide the desired instance type
+    Default: t2.micro
+
 Resources: 
   VpcStack:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/Network.yaml
-      TimeoutInMinutes: 20
+      TimeoutInMinutes: 10
       Parameters:
-        AvailabilityZones:
-          Fn::Join:
-            - ','
-            - !Ref AvailabilityZones
+
         VPCCidr: !Ref VPCCidr
         VPCName: !Ref VPCName
         PublicSubnet1Cidr: !Ref PublicSubnet1Cidr
@@ -70,7 +78,28 @@ Resources:
         PrivateSubnet1Cidr: !Ref PrivateSubnet1Cidr
         PrivateSubnet2Cidr: !Ref PrivateSubnet2Cidr
 
+  #Security Group stack
+  SecurityGroupStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/security-groups.yaml
+      TimeoutInMinutes: 10
+      Parameters: 
+        VPCId: !GetAtt VpcStack.Outputs.VpcId
+
   # Compute block - Define auto scaling groups here
+  BridgeStack:
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/bridge_infra.yaml
+      TimeoutInMinutes: 10  
+      Parameters:
+        AmiID: !Ref AmiID
+        EC2InstanceType: !Ref EC2InstanceType
+        SgId: !GetAtt SecurityGroupStack.Outputs.BridgeSecurityGroupId
+        Subnet1: !GetAtt VpcStack.Outputs.FrontEndSubnet1
+        Subnet2: !GetAtt VpcStack.Outputs.FrontEndSubnet2
+
 
   # Database block - Define the RDS here
         

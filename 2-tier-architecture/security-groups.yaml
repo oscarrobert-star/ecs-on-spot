@@ -1,0 +1,24 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Security groups for Ajua production stack
+
+Parameters:
+  VPCId:
+    Type: AWS::EC2::VPC::Id
+    Description: Provide VPC id where the Security groups should be created
+
+Resources:
+  BridgeSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http and https access into bridge
+      VpcId: 
+        Ref: VPCId
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+
+Outputs:
+  BridgeSecurityGroupId:
+    Value: !GetAtt BridgeSecurityGroup.GroupId

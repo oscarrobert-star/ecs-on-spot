@@ -216,24 +216,26 @@ Resources:
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId: !Ref NAT
 
+  # BridgeELB:
+  #   Type: AWS    
+
 #Add VPN gateway
 #Add VPC endpoint
-
-
-
-
 Outputs:
   VpcId:
-    Value: !Ref VPC
-    Export:
-      Name: cfn-workshop-VpcId
+    Value: 
+      Ref: VPC
+    # Export:
+    #   Name: cfn-workshop-VpcId
 
   FrontEndSubnet1:
-    Value: !Ref FrontEndSubnet1
-    Export:
-      Name: cfn-workshop-FrontEndSubnet1
+    Value: 
+      Ref: FrontEndSubnet1
+    # Export:
+    #   Name: cfn-workshop-FrontEndSubnet1
 
   FrontEndSubnet2:
-    Value: !Ref FrontEndSubnet2
-    Export:
-      Name: cfn-workshop-FrontEndSubnet2
+    Value: 
+      Ref: FrontEndSubnet2
+    # Export:
+    #   Name: cfn-workshop-FrontEndSubnet2

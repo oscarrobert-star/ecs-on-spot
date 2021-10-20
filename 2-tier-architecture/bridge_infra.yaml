@@ -1,0 +1,75 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Ajua bridge launch template and auto-scaling group
+
+Parameters:
+  # EnvironmentType:
+  #   Description: 'Specify the Environment type of the stack.'
+  #   Type: String
+  #   Default: Test
+  #   AllowedValues:
+  #     - Test
+  #     - Prod
+  #   ConstraintDescription: 'Specify either Test or Prod.'
+
+  AmiID:
+    Type: AWS::EC2::Image::Id
+    Description: 'The ID of the AMI.' # uses the latest ami id  
+    Default: 'ami-00399ec92321828f5' #ami-00399ec92321828f5
+
+  EC2InstanceType:
+    Type: String
+    Description: Provide the desired instance type
+    Default: t2.micro
+
+  Subnet1:  
+    Type: AWS::EC2::Subnet::Id
+    Description: 'The Subnet ID'
+  Subnet2:  
+    Type: AWS::EC2::Subnet::Id
+    Description: 'The Subnet ID' 
+
+  SgId:
+    Type: AWS::EC2::SecurityGroup::Id
+
+Resources:
+  BridgeLaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: Bridge-Launch-Template
+      LaunchTemplateData:
+        InstanceType: 
+          Ref: EC2InstanceType
+        ImageId: 
+          Ref: AmiID
+        SecurityGroupIds: #add sg heres
+          - Ref: SgId
+        IamInstanceProfile: 
+          Name: !ImportValue SSMInstanceProfile
+        # KeyName: #add key pair name here
+        BlockDeviceMappings:
+          - Ebs:
+              VolumeSize: 15
+              VolumeType: gp3
+            DeviceName: /dev/xvdcz  
+        # UserData: #add user data here 
+
+  BridgeASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties: 
+      AutoScalingGroupName: BridgeASG
+      MinSize: "1"
+      MaxSize: "4"
+      DesiredCapacity: "2"       
+      HealthCheckGracePeriod: 300
+      LaunchTemplate:
+        LaunchTemplateId: 
+          Ref: BridgeLaunchTemplate
+        Version: !GetAtt BridgeLaunchTemplate.LatestVersionNumber
+      NewInstancesProtectedFromScaleIn: true  
+      VPCZoneIdentifier:
+        - Ref: Subnet1
+        - Ref: Subnet2
+
+  
+# Outputs: 
+  
