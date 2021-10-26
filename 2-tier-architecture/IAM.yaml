@@ -70,6 +70,65 @@ Resources:
        - !Ref UserGroup 
     DependsOn: UserGroup     
 
+  UserSecurityCredentialsAccessPolicy: #this policy allows users to change their passwords and MFA devices
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow # AllowViewAccountInfo
+          Action: 
+          - iam:GetAccountPasswordPolicy
+          - iam:ListVirtualMFADevices
+          Resource: "*"
+
+        - Effect: Allow # AllowManageOwnPasswords
+          Action:   
+          - iam:ChangePassword
+          - iam:GetUser
+          Resource: arn:aws:iam::*:user/${aws:username}
+
+        # - Effect: Allow # AllowManageOwnAccessKeys
+        #   Action: 
+        #   - iam:CreateAccessKey
+        #   - iam:DeleteAccessKey
+        #   - iam:ListAccessKeys
+        #   - iam:UpdateAccessKey
+        #   Resource: arn:aws:iam::*:user/${aws:username}
+
+        - Effect: Allow # AllowManageOwnVirtualMFADevice
+          Action: 
+          - iam:CreateVirtualMFADevice
+          - iam:DeleteVirtualMFADevice
+          Resource: arn:aws:iam::*:mfa/${aws:username}
+
+        - Effect: Allow # AllowManageOwnUserMFA 
+          Action: 
+          - iam:DeactivateMFADevice
+          - iam:EnableMFADevice
+          - iam:ListMFADevices
+          - iam:ResyncMFADevice
+          Resource: arn:aws:iam::*:user/${aws:username}
+
+        - Effect: Deny # DenyAllExceptListedIfNoMFA
+          NotAction: 
+          - iam:CreateVirtualMFADevice
+          - iam:EnableMFADevice
+          - iam:GetUser
+          - iam:ListMFADevices
+          - iam:ListVirtualMFADevices
+          - iam:ResyncMFADevice
+          - sts:GetSessionToken
+          Resource: "*"
+          Condition: 
+            BoolIfExists: 
+              aws:MultiFactorAuthPresent: false
+
+      Groups:
+       - !Ref UserGroup 
+    DependsOn: UserGroup        
+
+    
 Outputs:
   SSMInstanceProfile:
     Value: !Ref SSMInstanceProfile

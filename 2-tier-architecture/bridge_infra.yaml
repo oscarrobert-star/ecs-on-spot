@@ -48,7 +48,7 @@ Resources:
         # KeyName: #add key pair name here
         BlockDeviceMappings:
           - Ebs:
-              VolumeSize: 15
+              VolumeSize: 15 # put a desired volume
               VolumeType: gp3
             DeviceName: /dev/xvdcz  
         # UserData: #add user data here 
