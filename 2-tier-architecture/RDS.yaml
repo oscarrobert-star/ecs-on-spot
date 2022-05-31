@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: RDS database template for Ajua
+
+Parameters:
+  DBName: 
+    Type: String
+    Description: Enter a database name
+    Default: world
+
+  DBAllocatedStorage: 
+    Type: Number
+    Description: The storage amount in GB you want for your database
+    Default: "5"
+
+  DBInstanceClass: 
+    Type: String
+    Description: Enter database instance class 
+    Default: db.t3.micro
+
+  Engine: 
+    Type: String
+    Description: Database engine you'd like to run
+    Default: postgres       
+
+  DBInstanceIdentifier: 
+    Type: String
+    Description: Name to idetify your db instance
+    Default: Ajua-Master
+
+  BackupRetentionPeriod:
+    Type: Number
+    Default: '0'
+    Description: Number of days for backup retention (max = 35)  
+
+  RDSSubnet1ID:
+    Type: AWS::EC2::Subnet::Id
+    Description: Select subnets for DB. Subnets must be in same VPC  
+
+  RDSSubnet2ID:
+    Type: AWS::EC2::Subnet::Id
+    Description: Select subnets for DB. Subnets must be in same VPC    
+
+  RDSSecurityGroupID:  
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Select security group for DB. 
+
+  DBUser: 
+    Type: String
+    Description: Enter DB username 
+    Default: testuser
+
+  DBPassword: 
+    Type: String
+    Description: Enter database password    
+    Default: testPas$C0d3
+
+Resources:
+  DBSubnetGroup:
+    Type: 'AWS::RDS::DBSubnetGroup'
+    Properties:
+      DBSubnetGroupDescription: Subnets the database belongs to
+      SubnetIds: 
+      - !Ref RDSSubnet2ID
+      - !Ref RDSSubnet1ID
+      Tags:
+        - Key: Name
+          Value: RDS_Subnet_Group
+
+  Master:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: !Ref 'DBName'
+      DBInstanceIdentifier: !Ref DBInstanceIdentifier
+      AllocatedStorage: !Ref 'DBAllocatedStorage'
+      DBInstanceClass: !Ref 'DBInstanceClass'
+      Engine: !Ref Engine
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      MasterUsername: !Ref 'DBUser'
+      MasterUserPassword: !Ref 'DBPassword'
+      VPCSecurityGroups:  
+      - !Ref RDSSecurityGroupID
+      AutoMinorVersionUpgrade: true
+      BackupRetentionPeriod: !Ref BackupRetentionPeriod
+      CopyTagsToSnapshot: true
+    
+    # Add read replicas here
+
+Outputs:
+  DBEndpoint:
+    Value: !GetAtt Master.Endpoint.Address
+  DBport:
+    Value: !GetAtt Master.Endpoint.Port
+
+
+
+

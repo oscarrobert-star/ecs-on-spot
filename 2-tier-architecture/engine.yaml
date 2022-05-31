@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Ajua bridge launch template and auto-scaling group
+Description: Ajua Engine launch template and auto-scaling group
 
 Parameters:
   EnvironmentType:
@@ -19,7 +19,7 @@ Parameters:
   EC2InstanceType:
     Type: String
     Description: Provide the desired instance type
-    Default: t3.micro #run t3.medium for production 
+    Default: t3.micro
 
   Subnet1:  
     Type: AWS::EC2::Subnet::Id
@@ -30,12 +30,10 @@ Parameters:
 
   SgId:
     Type: AWS::EC2::SecurityGroup::Id
-    Description: Enter a valid security group ID
 
   TargetGroupARNs:
     Type: String #should be list
-    # Default: arn:aws:elasticloadbalancing:us-east-2:071046007207:targetgroup/TargetGroup1/4911679704360b5e #get from elb stack output
-
+   
   OperatorEMail:
     Description: EMail address to notify if there are any scaling operations
     Type: String
@@ -45,26 +43,20 @@ Parameters:
 
   CPUPolicyTargetValue:
     Type: String
-    Default: '80'
-
+    Default: '80' 
+  
   KeyName: 
     Type: String
-    Default: core-platform-key #this key exists in Ajua account af-south-1 region   
+    Default: core-platform-key #this key exists in Ajua account af-south-1 region 
 
 Resources:
-  NotificationTopic:
-      Type: AWS::SNS::Topic
-      Properties:
-        Subscription:
-        - Endpoint: !Ref 'OperatorEMail'
-          Protocol: email
-
-  BridgeLaunchTemplate:
+  Enginelaunchtemplate:
     Type: AWS::EC2::LaunchTemplate
     Properties:
-      LaunchTemplateName: Bridge-Launch-Template
+      LaunchTemplateName: Engine-Launch-Template
       LaunchTemplateData:
-        InstanceType: !Ref EC2InstanceType
+        InstanceType: 
+          Ref: EC2InstanceType
         ImageId: 
           Ref: AmiID
         SecurityGroupIds: #add sg heres
@@ -76,7 +68,6 @@ Resources:
           - Ebs:
               VolumeSize: 15 # put a desired volume
               VolumeType: gp3
-              DeleteOnTermination: true
             DeviceName: /dev/xvdcz  
         UserData: #add user data here 
           Fn::Base64: |
@@ -86,45 +77,48 @@ Resources:
             # yum update -y #for centos
             sudo apt update -y
             
-            # configure AWS CLI for ec2-user / ubuntu
-            mkdir /home/ubuntu/.aws
-            cat > /home/ubuntu/.aws/config<< EOF
+            # configure AWS CLI for ec2-user
+            mkdir ~/.aws
+            cat > ~/.aws/config<< EOF
             [default]
             region = ${AWS::Region}
             EOF
 
-            # prerequisites - nvm
-            curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash
-            wget -qO- https://raw.githubusercontent.com/creationix/nvm/v0.33.11/install.sh | bash
+            # install npm, nodejs, pm2, java
+            # curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+            # sudo apt install -y nodejs
+            # sudo npm install pm2@latest -g
 
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-            [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-            source ~/.bashrc
-
-            nvm install lts
-            nvm install v11.10.0
-
-            npm install -g yarn
-
-            yarn global add pm2
+            sudo apt install -y default-jre
+            sudo apt install -y default-jdk
 
             # create log dir
-            sudo mkdir /var/log/bridge
+            sudo mkdir /var/log/Engine3
 
-            # build directory (builds from CI/CD)
-            sudo mkdir /opt/Bridge
+            # create jar directory for the jar files
+            sudo mkdir /opt/jar/ 
 
-            # S3 logging scripts
+            # Engine service file
+            cat > /etc/systemd/system/engine.service<< EOF
+            [Unit]
+            Description=Ajua Platform Engine
 
-            #Scripts for testing 
+            [Service]
+            WorkingDirectory=/opt/jar/
+            Environment="CONFIGURATION_SERVER_HOST=10.0.5.196"
+            ExecStart=/usr/bin/java -jar -Dspring.profiles.active=qa /opt/jar/engine-0.0.1-SNAPSHOT.jar
+            Type=simple
+            Restart=on-failure
+            RestartSec=5s
 
+            [Install]
+            WantedBy=multi-user.target
+            EOF
 
             ##instance information
             INSTANCE_ID=`curl -s http://169.254.169.254/latest/meta-data/instance-id`
             HOSTNAME=`hostname -i`
-            REGION=`curl -s http://169.254.169.254/latest/meta-data/placement/region`            
+            REGION=`curl -s http://169.254.169.254/latest/meta-data/placement/region`
 
             # install code deploy agent
             sudo apt update -y
@@ -138,20 +132,20 @@ Resources:
             sudo apt install nginx -y 
             sudo systemctl start nginx.service
 
-          
-  BridgeASG:
+           
+  EngineASG:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties: 
-      AutoScalingGroupName: BridgeASG
+      AutoScalingGroupName: EngineASG
       MinSize: "1"
       MaxSize: "4"
       DesiredCapacity: "3"       
-      HealthCheckGracePeriod: 60
+      HealthCheckGracePeriod: 300
       LaunchTemplate:
         LaunchTemplateId: 
-          Ref: BridgeLaunchTemplate
-        Version: !GetAtt BridgeLaunchTemplate.LatestVersionNumber
-      NewInstancesProtectedFromScaleIn: false   
+          Ref: Enginelaunchtemplate
+        Version: !GetAtt Enginelaunchtemplate.LatestVersionNumber
+      # NewInstancesProtectedFromScaleIn: true  
       VPCZoneIdentifier:
         - Ref: Subnet1
         - Ref: Subnet2
@@ -160,25 +154,26 @@ Resources:
       Tags:
       -   Key: Name
           PropagateAtLaunch: true
-          Value: !Join ["-", [Bridge, !Ref EnvironmentType ]]
-      -   Key: Environment
-          PropagateAtLaunch: true
-          Value: !Ref EnvironmentType
-
+          Value: !Join ["-", [Engine, !Ref EnvironmentType]]  
       NotificationConfigurations:
         - TopicARN: !Ref 'NotificationTopic'
           NotificationTypes: ['autoscaling:EC2_INSTANCE_LAUNCH', 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR',
             'autoscaling:EC2_INSTANCE_TERMINATE', 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR']
       
-  BridgeScalingPolicy:
+  EngineScalingPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:
-      AutoScalingGroupName: !Ref BridgeASG
+      AutoScalingGroupName: !Ref EngineASG
       PolicyType: TargetTrackingScaling
       TargetTrackingConfiguration: 
         PredefinedMetricSpecification:
           PredefinedMetricType: ASGAverageCPUUtilization
-        TargetValue: !Ref CPUPolicyTargetValue
+        TargetValue: !Ref CPUPolicyTargetValue  
 
-
-# Outputs: 
+  NotificationTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+      - Endpoint: !Ref 'OperatorEMail'
+        Protocol: email
+      

@@ -1,0 +1,196 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Ajua Config server launch template and auto-scaling group
+
+Parameters:
+  EnvironmentType:
+    Description: 'Specify the Environment type of the stack.'
+    Type: String
+    Default: Test
+    AllowedValues:
+      - Test
+      - Prod
+    ConstraintDescription: 'Specify either Test or Prod.'
+
+  AmiID:
+    Type: AWS::EC2::Image::Id
+    Description: 'The ID of the AMI.' # uses the latest ami id  
+    Default: 'ami-08f4e5fb5d6e0199d' # custom AMI with vault and consul installed
+
+  EC2InstanceType:
+    Type: String
+    Description: Provide the desired instance type
+    Default: t3.nano
+
+  Subnet1:  
+    Type: AWS::EC2::Subnet::Id
+    Description: 'The Subnet ID'
+  Subnet2:  
+    Type: AWS::EC2::Subnet::Id
+    Description: 'The Subnet ID' 
+
+  SgId:
+    Type: AWS::EC2::SecurityGroup::Id
+
+  TargetGroupARNs:
+    Type: String #should be list
+  #get from elb stack output
+
+  OperatorEMail:
+    Description: EMail address to notify if there are any scaling operations
+    Type: String
+    AllowedPattern: ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)
+    ConstraintDescription: must be a valid email address.  
+    Default: testsoscar@gmail.com
+
+  CPUPolicyTargetValue:
+    Type: String
+    Default: '80'
+  
+  KeyName: 
+    Type: String
+    Default: core-platform-key #this key exists in Ajua account af-south-1 region 
+
+Resources:
+  NotificationTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        Subscription:
+        - Endpoint: !Ref 'OperatorEMail'
+          Protocol: email
+
+  ConfigServerlaunchtemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: ConfigServer-Launch-Template
+      LaunchTemplateData:
+        InstanceType: 
+          Ref: EC2InstanceType
+        ImageId: 
+          Ref: AmiID
+        SecurityGroupIds: #add sg heres
+          - Ref: SgId
+        IamInstanceProfile: 
+          Name: !ImportValue SSMInstanceProfile
+        KeyName: !Ref KeyName  #add key pair name here
+        BlockDeviceMappings:
+          - Ebs:
+              VolumeSize: 15 # put a desired volume
+              VolumeType: gp3
+            DeviceName: /dev/xvdcz  
+        UserData: #add user data here 
+          Fn::Base64: |
+            #!/bin/bash
+exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+            # install updates
+            # yum update -y #for centos
+            sudo apt update -y
+            
+            # configure AWS CLI for ec2-user
+            mkdir ~/.aws
+            cat > ~/.aws/config<< EOF
+            [default]
+            region = ${AWS::Region}
+            EOF
+
+            # install npm, nodejs, pm2, java
+            # curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+            # sudo apt install -y nodejs
+            # sudo npm install pm2@latest -g
+
+            sudo apt install -y default-jre
+            sudo apt install -y default-jdk
+
+            # ConfigServer service file
+            cat > /etc/systemd/system/configuration-server.service<< EOF
+            [Unit]
+            Description=Ajua Platform configuration-server
+
+            [Service]
+            WorkingDirectory=/opt/configuration-server/
+            Environment="CONSUL_HOST=127.0.0.1" #change this to vault endpoint
+            Environment="VAULT_HOST=vault.service.consul" #change this to vault endpoint
+            Environment="CONSUL_PORT=8500"
+            Environment="VAULT_PORT=8200"
+            Environment="VAULT_TOKEN=s.IXkQnmjhVNmpqcGetXZtxsrF"
+            Environment="GITHUB_PASSWORD=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"
+            Environment="GITHUB_USERNAME=ajua-team"
+            ExecStart=/usr/bin/java -jar configuration-server-0.0.1-SNAPSHOT.jar
+            User=platformapps
+            Type=simple
+            Restart=on-failure
+            RestartSec=10
+
+            [Install]
+            WantedBy=multi-user.target
+
+            EOF
+
+            sudo mkdir -p  /opt/configuration-server
+            groupadd -r appmgr
+            useradd -r -s /bin/false -g appmgr platformapps
+            id platformapps 
+            sudo chown -R platformapps:appmgr /opt/configuration-server
+            sudo mkdir /var/log/configuration-server
+            sudo touch /var/log/configuration-server/application.log
+            sudo chown -R platformapps:appmgr /var/log/configuration-server
+            sudo systemctl daemon-reload
+
+            REGION=`curl -s http://169.254.169.254/latest/meta-data/placement/region`
+
+            # install code deploy agent
+            sudo apt update -y
+            sudo apt install ruby-full -y
+            sudo apt install wget -y
+            wget https://aws-codedeploy-$REGION.s3.$REGION.amazonaws.com/latest/install
+            chmod +x ./install
+            sudo ./install auto > /tmp/logfile
+
+            sudo /opt/consul/bin/run-consul --client --cluster-tag-key "consul-servers" --cluster-tag-value "consul-cluster"
+            sudo apt install nginx -y 
+            sudo systemctl start nginx.service
+
+
+  ConfigServerASG:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties: 
+      AutoScalingGroupName: ConfigServerASG
+      MinSize: "1"
+      MaxSize: "2"
+      DesiredCapacity: "1"       
+      HealthCheckGracePeriod: 300
+      LaunchTemplate:
+        LaunchTemplateId: 
+          Ref: ConfigServerlaunchtemplate
+        Version: !GetAtt ConfigServerlaunchtemplate.LatestVersionNumber
+      # NewInstancesProtectedFromScaleIn: true  
+      VPCZoneIdentifier:
+        - Ref: Subnet1
+        - Ref: Subnet2
+      TargetGroupARNs: 
+        - !Ref TargetGroupARNs
+      Tags:
+      -   Key: Name
+          PropagateAtLaunch: true
+          Value: !Join ["-", [ConfigServer-servers, !Ref EnvironmentType ]] 
+      -   Key: consul-servers
+          PropagateAtLaunch: true
+          Value: consul-cluster
+
+      NotificationConfigurations:
+        - TopicARN: !Ref 'NotificationTopic'
+          NotificationTypes: ['autoscaling:EC2_INSTANCE_LAUNCH', 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR',
+            'autoscaling:EC2_INSTANCE_TERMINATE', 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR']
+      
+  ConfigServerScalingPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AutoScalingGroupName: !Ref ConfigServerASG
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration: 
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ASGAverageCPUUtilization
+        TargetValue: !Ref CPUPolicyTargetValue  
+
+
+# add consul tag keys and values in user data script and tags for consul client to autodiscover
+# update user data script to launch consul client

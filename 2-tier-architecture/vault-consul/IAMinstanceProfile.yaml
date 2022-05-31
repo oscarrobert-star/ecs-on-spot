@@ -1,0 +1,57 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Nested stack - The IAM template.
+
+Resources:
+  SSMIAMRole: 
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+        - !Ref InstanceProfileCustomPolicy
+
+  InstanceProfileCustomPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      #PolicyName: EC2-SSM-Access 
+      PolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+        - Sid: AutoDiscoverConsulCluster # This policy allows consul servers and clients to auto discover using AWS resource tags
+          Effect: Allow
+          Action:
+          - ec2:DescribeTags
+          - ec2:DescribeInstances
+          - autoscaling:DescribeAutoScalingGroups
+          Resource: "*" 
+          
+        - Sid: KMS
+          Effect: Allow
+          Action:
+          - kms:Encrypt
+          - kms:Decrypt
+          - kms:ReEncrypt*
+          - kms:GenerateDataKey*
+          - kms:DescribeKey
+          Resource: "*" 
+
+  SSMInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref SSMIAMRole 
+
+Outputs:
+  SSMInstanceProfile:
+    Value: !Ref SSMInstanceProfile
+    Export: 
+      Name: SSMInstanceProfile  

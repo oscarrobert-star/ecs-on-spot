@@ -1,0 +1,247 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Nested stack - The IAM template.
+
+Resources:
+  SSMIAMRole: 
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess
+        - !Ref InstanceProfileCustomPolicy
+
+  InstanceProfileCustomPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      #PolicyName: EC2-SSM-Access 
+      PolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+        - Sid: AutoDiscoverConsulCluster # This policy allows consul servers and clients to auto discover using AWS resource tags
+          Effect: Allow
+          Action:
+          - ec2:DescribeTags
+          - ec2:DescribeInstances
+          - autoscaling:DescribeAutoScalingGroups
+          Resource: "*" 
+          # Add custom rules eg KMS access here        
+
+  SSMInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref SSMIAMRole
+
+  EC2ECRInstanceProfile: # Grants ec2 access to push/pull images from aws ecr
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: /
+      Roles:
+        - !Ref EC2ECRrole
+
+  EC2ECRrole: 
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - !Ref EC2ECRPolicy
+
+  EC2ECRPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      #PolicyName: EC2-SSM-Access 
+      PolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+        - Sid: AllowPushPull # Allow pushing and pulling docker images from ecr
+          Effect: Allow
+          Action:
+          - ecr:BatchGetImage
+          - ecr:BatchCheckLayerAvailability
+          - ecr:CompleteLayerUpload
+          - ecr:GetDownloadUrlForLayer
+          - ecr:InitiateLayerUpload
+          - ecr:PutImage
+          - ecr:UploadLayerPart
+          Resource: "*"  
+
+  S3ReadWitePolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      #PolicyName: EC2-SSM-Access 
+      PolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+        - Sid: AllowPushPull # Allow S3 read write access for all buckets, all objects
+          Effect: Allow
+          Action:
+          - s3:*Object
+          - s3:ListBucket         
+          Resource: "*"
+
+  UserGroup: # New user group
+    Type: AWS::IAM::Group 
+    Properties:
+      GroupName: Dev-users
+      Path: "/groups/"
+      
+  ExperimentGroup: # This group is where we define rules required by devs for experiments
+    Type: AWS::IAM::Group
+    Properties:
+      GroupName: Experiments 
+      Path: "/groups/"
+      ManagedPolicyArns: 
+        # - arn:aws:iam::aws:policy/IAMFullAccess
+        - arn:aws:iam::aws:policy/AWSLambdaExecute
+
+  EC2SSMAccesspolicy: # this policy grants access to SSM and AWS CLI access role
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      #PolicyName: EC2-SSM-Access 
+      PolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - ssm:StartSession
+          - ssm:SendCommand
+          Resource: !Sub 'arn:aws:ec2:*:${AWS::AccountId}:instance/*'  
+
+        - Effect: Allow
+          Action:   
+          - ssm:GetConnectionStatus
+          - ssm:DescribeInstanceInformation
+          Resource: "*"
+
+        - Effect: Allow
+          Action:
+          - ssm:TerminateSession
+          - ssm:ResumeSession
+          Resource: arn:aws:ssm:*:*:session/${aws:username}-*
+
+        - Effect: Allow
+          Action:
+          - ssm:StartSession
+          Resource:
+          - !Sub 'arn:aws:ec2:*:${AWS::AccountId}:instance/*'
+          - arn:aws:ssm:*:*:document/AWS-StartSSHSession    
+
+        - Effect: Allow
+          Action: 
+          - ec2:Describe*
+          Resource: "*"  
+
+        - Sid: AWSCLIAccess # Grants access to the AWSCLI Role. 
+          Effect: Allow
+          Action:
+            - sts:AssumeRole
+          Resource:
+            - !GetAtt AWSCLIRole.Arn  
+
+      Groups:
+       - !Ref UserGroup 
+    DependsOn: UserGroup     
+
+  UserSecurityCredentialsAccessPolicy: #this policy allows users to change their passwords and MFA devices
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      PolicyDocument: 
+        Version: '2012-10-17'
+        Statement:
+        - Sid: AllowViewAccountInfo # AllowViewAccountInfo
+          Effect: Allow 
+          Action: 
+          - iam:GetAccountPasswordPolicy
+          - iam:ListVirtualMFADevices
+          Resource: "*"
+
+        - Effect: Allow # AllowManageOwnPasswords
+          Action:   
+          - iam:ChangePassword
+          - iam:GetUser
+          Resource: arn:aws:iam::*:user/${aws:username}
+
+        - Effect: Allow # AllowManageOwnAccessKeys
+          Action: 
+          # - iam:CreateAccessKey
+          - iam:DeleteAccessKey
+          - iam:ListAccessKeys
+          - iam:UpdateAccessKey
+          Resource: arn:aws:iam::*:user/${aws:username}
+
+        - Effect: Allow # AllowManageOwnVirtualMFADevice
+          Action: 
+          - iam:CreateVirtualMFADevice
+          - iam:DeleteVirtualMFADevice
+          Resource: arn:aws:iam::*:mfa/${aws:username}
+
+        - Effect: Allow # AllowManageOwnUserMFA 
+          Action: 
+          - iam:DeactivateMFADevice
+          - iam:EnableMFADevice
+          - iam:ListMFADevices
+          - iam:ResyncMFADevice
+          Resource: arn:aws:iam::*:user/${aws:username}
+
+        - Effect: Deny # DenyAllExceptListedIfNoMFA
+          NotAction: 
+          - iam:CreateVirtualMFADevice
+          # - iam:DeleteVirtualMFADevice
+          - iam:ChangePassword
+          - iam:EnableMFADevice
+          - iam:GetUser
+          - iam:ListMFADevices
+          - iam:ListVirtualMFADevices
+          - iam:ResyncMFADevice
+          - sts:GetSessionToken
+          Resource: "*"
+          Condition: 
+            BoolIfExists: 
+              aws:MultiFactorAuthPresent: false
+
+      Groups:
+       - !Ref UserGroup 
+    DependsOn: UserGroup        
+
+  AWSCLIRole: # This role grants access to both managed and custom policies; eg S3, ECR etc - Intended for use by IAM users
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: "*"
+                # - !Sub 'arn:aws:iam::${AWS::AccountId}:*'
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns: 
+        - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/ecr-policy'
+        - arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess      
+
+    
+Outputs:
+  SSMInstanceProfile:
+    Value: !Ref SSMInstanceProfile
+    Export: 
+      Name: SSMInstanceProfile
+
+  UserGroup:
+    Value: !Ref UserGroup
+    Export: 
+      Name: Dev-Group
