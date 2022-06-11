@@ -8,7 +8,6 @@ wait for 3 mins for IAM resources to be created then create the QA (or productio
 
 ```
 aws cloudformation create-stack --stack-name QA --template-url https://s3.us-west-2.amazonaws.com/terraform-backend.ajua.com/IaC/cf/main.yaml 
-
 ```
 
 Create vpc peering connection between the newly created VPCs. Ensure you edit the route tables with the correct addresses so that the consul cluster can be created successfully. Config server is dependent on this connection.
@@ -18,6 +17,9 @@ Ssh into the vault server and unseal vault. Store the tokens safely for future u
 ## To update the stack run:
 ```
 aws cloudformation update-stack --stack-name QA --template-url https://s3.us-west-2.amazonaws.com/terraform-backend.ajua.com/IaC/cf/main.yaml
+```
+```
+aws cloudformation update-stack --stack-name platform-supporting-resources --template-url https://s3.us-west-2.amazonaws.com/terraform-backend.ajua.com/IaC/cf/vault-consul/main-vault-consul-template.yaml --capabilities CAPABILITY_IAM
 ```
 
 ## To delete stack, run:
@@ -47,3 +49,16 @@ aws cloudformation create-stack --stack-name scheduler-pipeline --template-url h
 ```
 aws cloudformation create-stack --stack-name config-server-pipeline --template-url https://s3.us-west-2.amazonaws.com/terraform-backend.ajua.com/IaC/cf/cicd/config-server-pipeline.yaml --capabilities CAPABILITY_IAM
 ```
+
+# Data Migration
+The purpose of this migration is to use managed RDS for postgres database.
+
+The migration was done using AWS Data Migration Service.
+
+## Steps towards Migration 
+RDS Database has already been created with the CFN stacks above hence we'll proceed with DMS setup.
+
+To migrate data, follow the steps outlined in this 
+
+[https://aws.amazon.com/getting-started/hands-on/move-to-managed/migrate-postgresql-to-amazon-rds](AWS example)
+

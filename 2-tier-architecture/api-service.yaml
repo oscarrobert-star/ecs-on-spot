@@ -14,7 +14,7 @@ Parameters:
   AmiID:
     Type: AWS::EC2::Image::Id
     Description: 'The ID of the AMI.' # uses the latest ami id  
-    Default: 'ami-00c90dbdc12232b58' #ami-00c90dbdc12232b58
+    Default: 'ami-00e7df8df28dfa791' #ami-00e7df8df28dfa791
 
   EC2InstanceType:
     Type: String
@@ -50,6 +50,10 @@ Parameters:
     Type: String
     Default: core-platform-key #this key exists in Ajua account af-south-1 region   
 
+  LoadBalancer:
+    Type: String
+    Description: Provides load balancer dns name   
+
 Resources:
   apiservicelaunchtemplate:
     Type: AWS::EC2::LaunchTemplate
@@ -69,10 +73,14 @@ Resources:
           - Ebs:
               VolumeSize: 15 # put a desired volume
               VolumeType: gp3
+              DeleteOnTermination: true
+              # Encrypted: true
+              # KmsKeyId: !ImportValue KeyArn
             DeviceName: /dev/xvdcz  
         UserData: #add user data here 
-          Fn::Base64: |
+          Fn::Base64: !Sub |
             #!/bin/bash
+            exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
             # install updates
             # yum update -y #for centos
             sudo apt update -y
@@ -94,12 +102,20 @@ Resources:
             sudo apt install -y default-jre
             sudo apt install -y default-jdk
 
+            sudo apt install -y jq
+
+            stackname=${AWS::StackName}
+
+            # Load balancer endpoint 
+            ALB_ENDPOINT=`aws cloudformation describe-stacks --region ${AWS::Region} | jq -r '.Stacks[] | select(.StackName | contains("'${AWS::StackName}'")) | .Outputs[] | select(.OutputKey | contains("LoadBalancerNames")) | .OutputValue'`
+
 
             # create log dir
             sudo mkdir /var/log/api_service
 
             # create jar directory for the jar files
-            sudo mkdir /opt/jar/
+            sudo mkdir /opt/jar/ortValue KeyArn
+              # DeleteOnTermination: true
 
             # Api Service service file
             cat > /etc/systemd/system/api.service<< EOF
@@ -108,7 +124,7 @@ Resources:
 
             [Service]
             WorkingDirectory=/opt/jar/
-            Environment="CONFIGURATION_SERVER_HOST=10.0.5.196"
+            Environment="CONFIGURATION_SERVER_HOST=${LoadBalancer}"
             ExecStart=/usr/bin/java -jar -Dspring.profiles.active=qa /opt/jar/MsurveyAPI-0.0.1-SNAPSHOT.jar
             Type=simple
             Restart=on-failure

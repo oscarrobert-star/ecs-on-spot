@@ -72,15 +72,15 @@ Resources:
         IamInstanceProfile: 
           Name: !ImportValue SSMInstanceProfile
         KeyName: !Ref KeyName  #add key pair name here
-        BlockDeviceMappings:
-          - Ebs:
-              VolumeSize: 15 # put a desired volume
-              VolumeType: gp3
-            DeviceName: /dev/xvdcz  
+        # BlockDeviceMappings:
+        #   - Ebs:
+        #       VolumeSize: 15 # put a desired volume
+        #       VolumeType: gp3
+        #     DeviceName: /dev/xvdcz  
         UserData: #add user data here 
           Fn::Base64: |
             #!/bin/bash
-exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+            exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
             # install updates
             # yum update -y #for centos
             sudo apt update -y
@@ -149,6 +149,9 @@ exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
             sudo apt install nginx -y 
             sudo systemctl start nginx.service
 
+            # Install cloudwatch agent
+            wget https://s3.amazonaws.com/amazoncloudwatch-agent/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb
+            sudo dpkg -i -E ./amazon-cloudwatch-agent.deb
 
   ConfigServerASG:
     Type: AWS::AutoScaling::AutoScalingGroup

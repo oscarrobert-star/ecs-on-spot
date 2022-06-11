@@ -31,6 +31,8 @@ Resources:
           - ec2:DescribeTags
           - ec2:DescribeInstances
           - autoscaling:DescribeAutoScalingGroups
+          - cloudformation:DescribeStacks
+          - cloudformation:ListStacks
           Resource: "*" 
           
         - Sid: KMS

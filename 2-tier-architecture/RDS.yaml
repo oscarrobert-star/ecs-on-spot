@@ -5,7 +5,7 @@ Parameters:
   DBName: 
     Type: String
     Description: Enter a database name
-    Default: world
+    Default: africa
 
   DBAllocatedStorage: 
     Type: Number
@@ -52,7 +52,7 @@ Parameters:
   DBPassword: 
     Type: String
     Description: Enter database password    
-    Default: testPas$C0d3
+    Default: verystrongpassword
 
 Resources:
   DBSubnetGroup:
@@ -69,19 +69,21 @@ Resources:
   Master:
     Type: AWS::RDS::DBInstance
     Properties:
-      DBName: !Ref 'DBName'
+      DBName: !Ref DBName
       DBInstanceIdentifier: !Ref DBInstanceIdentifier
-      AllocatedStorage: !Ref 'DBAllocatedStorage'
-      DBInstanceClass: !Ref 'DBInstanceClass'
+      AllocatedStorage: !Ref DBAllocatedStorage
+      DBInstanceClass: !Ref DBInstanceClass
       Engine: !Ref Engine
       DBSubnetGroupName: !Ref DBSubnetGroup
-      MasterUsername: !Ref 'DBUser'
-      MasterUserPassword: !Ref 'DBPassword'
+      MasterUsername: !Ref DBUser
+      MasterUserPassword: !Ref DBPassword
       VPCSecurityGroups:  
       - !Ref RDSSecurityGroupID
       AutoMinorVersionUpgrade: true
       BackupRetentionPeriod: !Ref BackupRetentionPeriod
       CopyTagsToSnapshot: true
+      MaxAllocatedStorage: 1500
+      StorageType: gp2
     
     # Add read replicas here
 

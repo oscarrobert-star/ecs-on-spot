@@ -102,7 +102,7 @@ Resources:
       AutoScalingGroupName: consulASG
       MinSize: "1"
       MaxSize: "5"
-      DesiredCapacity: "3"       
+      DesiredCapacity: "1"       
       HealthCheckGracePeriod: 300
       LaunchTemplate:
         LaunchTemplateId: 

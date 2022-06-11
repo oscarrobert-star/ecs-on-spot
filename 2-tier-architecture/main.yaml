@@ -70,7 +70,7 @@ Parameters:
   AmiID:
     Type: AWS::EC2::Image::Id
     Description: 'The ID of the AMI.' # uses the latest ami id  
-    Default: 'ami-00c90dbdc12232b58' 
+    Default: 'ami-00e7df8df28dfa791' 
 
   EC2InstanceType:
     Type: String
@@ -96,7 +96,7 @@ Parameters:
   DBAllocatedStorage: 
     Type: Number
     Description: The storage amount in GB you want for your database
-    Default: "5"
+    Default: "50"
 
   DBInstanceClass: 
     Type: String
@@ -142,7 +142,7 @@ Parameters:
 
   KeyName: 
     Type: String
-    Default: core-platform-key  
+    Default: core-platform-key    
 
 
 Resources: 
@@ -215,6 +215,8 @@ Resources:
         CPUPolicyTargetValue: !Ref CPUPolicyTargetValue
         TargetGroupARNs: !GetAtt ELBStack.Outputs.ApiServiceTGArn
         KeyName: !Ref KeyName
+        LoadBalancer: !GetAtt ELBStack.Outputs.LoadBalancerNames
+
 
   EngineStack:
     Type: AWS::CloudFormation::Stack
@@ -231,6 +233,7 @@ Resources:
         CPUPolicyTargetValue: !Ref CPUPolicyTargetValue
         TargetGroupARNs: !GetAtt ELBStack.Outputs.EngineTGArn
         KeyName: !Ref KeyName
+        LoadBalancer: !GetAtt ELBStack.Outputs.LoadBalancerNames
 
   SchedulerStack:
     Type: AWS::CloudFormation::Stack
@@ -247,6 +250,7 @@ Resources:
         CPUPolicyTargetValue: !Ref CPUPolicyTargetValue
         TargetGroupARNs: !GetAtt ELBStack.Outputs.SchedulerTGArn
         KeyName: !Ref KeyName
+        LoadBalancer: !GetAtt ELBStack.Outputs.LoadBalancerNames
         
   # RedisCluster:
   #   Type: AWS::CloudFormation::Stack
@@ -297,22 +301,26 @@ Resources:
   # ######################################################################################################################
 
   # Database block - Define the RDS here
-  # RDSDBStack:
-  #   Type: AWS::CloudFormation::Stack
-  #   Properties: 
-  #     TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/RDS.yaml
-  #     TimeoutInMinutes: 10  
-  #     Parameters:
-  #       DBName: !Ref DBName
-  #       DBAllocatedStorage: !Ref DBAllocatedStorage
-  #       Engine: !Ref Engine
-  #       DBInstanceIdentifier: !Ref DBInstanceIdentifier
-  #       BackupRetentionPeriod: !Ref BackupRetentionPeriod
-  #       RDSSubnet1ID: !GetAtt VpcStack.Outputs.RDSSubnet1
-  #       RDSSubnet2ID: !GetAtt VpcStack.Outputs.RDSSubnet2
-  #       RDSSecurityGroupID: !GetAtt SecurityGroupStack.Outputs.RDSSecurityGroupGroupId
-  #       DBUser: !Ref DBUser
-  #       DBPassword: !Ref DBPassword
+  RDSDBStack:
+    Type: AWS::CloudFormation::Stack
+    Properties: 
+      TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/RDS.yaml
+      TimeoutInMinutes: 10  
+      Parameters:
+        DBName: !Ref DBName
+        DBAllocatedStorage: !Ref DBAllocatedStorage
+        Engine: !Ref Engine
+        DBInstanceIdentifier: !Ref DBInstanceIdentifier
+        BackupRetentionPeriod: !Ref BackupRetentionPeriod
+        RDSSubnet1ID: !GetAtt VpcStack.Outputs.RDSSubnet1
+        RDSSubnet2ID: !GetAtt VpcStack.Outputs.RDSSubnet2
+        RDSSecurityGroupID: !GetAtt SecurityGroupStack.Outputs.RDSSecurityGroupGroupId
+        DBUser: !Ref DBUser
+        DBPassword: !Ref DBPassword
 
   # # Kibana - Elastic search
         
+
+Outputs:
+  ELBEndpoint:
+    Value: !GetAtt ELBStack.Outputs.LoadBalancerNames

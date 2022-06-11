@@ -14,7 +14,7 @@ Parameters:
   AmiID:
     Type: AWS::EC2::Image::Id
     Description: 'The ID of the AMI.' # uses the latest ami id  
-    Default: 'ami-00c90dbdc12232b58' #ami-00c90dbdc12232b58
+    Default: 'ami-00e7df8df28dfa791' #ami-00e7df8df28dfa791
 
   EC2InstanceType:
     Type: String

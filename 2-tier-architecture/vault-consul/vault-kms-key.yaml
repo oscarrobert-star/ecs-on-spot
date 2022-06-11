@@ -60,3 +60,9 @@ Resources:
       AliasName: alias/Core
       TargetKeyId: !Ref Key
            
+
+Outputs:
+  KeyArn:
+    Value: !GetAtt Key.Arn
+    Export: 
+      Name: KeyArn
