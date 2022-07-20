@@ -9,7 +9,7 @@ Parameters:
 
   GitHubOwner:
     Type: String
-    Default: oscarrobert-star
+    Default: ajua-labs
 
   OAuthToken:
     Type: String

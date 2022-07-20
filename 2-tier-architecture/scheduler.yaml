@@ -102,9 +102,11 @@ Resources:
 
             # create log dirAWS::EC2::LaunchTemplate
             sudo mkdir /var/log/scheduler
+            sudo chmod 777 /var/log/scheduler
 
             # create jar directory for the jar files
             sudo mkdir /opt/jar/
+            sudo chmod 777 /opt/jar/
             
             # Scheduler service file
             cat > /etc/systemd/system/scheduler.service<< EOF
@@ -145,9 +147,9 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties: 
       AutoScalingGroupName: schedulerASG
-      MinSize: "1"
+      MinSize: "0"
       MaxSize: "4"
-      DesiredCapacity: "1"        
+      DesiredCapacity: "0"        
       HealthCheckGracePeriod: 300
       LaunchTemplate:
         LaunchTemplateId: 

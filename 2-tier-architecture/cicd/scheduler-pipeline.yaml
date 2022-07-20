@@ -9,11 +9,11 @@ Parameters:
 
   GitHubOwner:
     Type: String
-    Default: oscarrobert-star
+    Default: ajua-labs
 
   OAuthToken:
     Type: String
-    Default: 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
+    Default: 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
     NoEcho: true
 
   RepositoryName:

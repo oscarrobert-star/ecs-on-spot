@@ -50,6 +50,14 @@ Parameters:
     Type: String
     Default: core-platform-key #this key exists in Ajua account af-south-1 region 
 
+  VaultToken:
+    Type: String
+    Default: s.FwHjr1br9WrC2cw2z0zzwQk3  
+
+  GITHUBPASSWORD:
+    Type: String
+    Default: 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
+
 Resources:
   NotificationTopic:
       Type: AWS::SNS::Topic
@@ -78,7 +86,7 @@ Resources:
         #       VolumeType: gp3
         #     DeviceName: /dev/xvdcz  
         UserData: #add user data here 
-          Fn::Base64: |
+          Fn::Base64: !Sub |
             #!/bin/bash
             exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
             # install updates
@@ -106,16 +114,17 @@ Resources:
             Description=Ajua Platform configuration-server
 
             [Service]
-            WorkingDirectory=/opt/configuration-server/
+            WorkingDirectory=/opt/jar/
             Environment="CONSUL_HOST=127.0.0.1" #change this to vault endpoint
             Environment="VAULT_HOST=vault.service.consul" #change this to vault endpoint
+            Environment="VAULT_SCHEME=https"
             Environment="CONSUL_PORT=8500"
             Environment="VAULT_PORT=8200"
-            Environment="VAULT_TOKEN=s.IXkQnmjhVNmpqcGetXZtxsrF"
-            Environment="GITHUB_PASSWORD=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"
+            Environment="VAULT_TOKEN=${VaultToken}"
+            Environment="GITHUB_PASSWORD=${GITHUBPASSWORD}"
             Environment="GITHUB_USERNAME=ajua-team"
             ExecStart=/usr/bin/java -jar configuration-server-0.0.1-SNAPSHOT.jar
-            User=platformapps
+            #User=platformapps
             Type=simple
             Restart=on-failure
             RestartSec=10
@@ -125,14 +134,11 @@ Resources:
 
             EOF
 
-            sudo mkdir -p  /opt/configuration-server
-            groupadd -r appmgr
-            useradd -r -s /bin/false -g appmgr platformapps
-            id platformapps 
-            sudo chown -R platformapps:appmgr /opt/configuration-server
+            sudo mkdir -p  /opt/jar/ 
+            sudo chmod 777 /opt/jar/
             sudo mkdir /var/log/configuration-server
             sudo touch /var/log/configuration-server/application.log
-            sudo chown -R platformapps:appmgr /var/log/configuration-server
+            sudo chmod 777 /var/log/configuration-server
             sudo systemctl daemon-reload
 
             REGION=`curl -s http://169.254.169.254/latest/meta-data/placement/region`
@@ -157,9 +163,9 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties: 
       AutoScalingGroupName: ConfigServerASG
-      MinSize: "1"
+      MinSize: "0"
       MaxSize: "2"
-      DesiredCapacity: "1"       
+      DesiredCapacity: "0"       
       HealthCheckGracePeriod: 300
       LaunchTemplate:
         LaunchTemplateId: 

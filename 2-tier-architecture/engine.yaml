@@ -101,9 +101,11 @@ Resources:
 
             # create log dir
             sudo mkdir /var/log/Engine3
+            sudo chmod 777 /var/log/Engine3
 
             # create jar directory for the jar files
             sudo mkdir /opt/jar/ 
+            sudo chmod 777 /var/log/Engine3
 
             # Engine service file
             cat > /etc/systemd/system/engine.service<< EOF
@@ -138,14 +140,16 @@ Resources:
             # Install nginx 
             sudo apt install nginx -y 
             sudo systemctl start nginx.service
+
+            sudo /opt/consul/bin/run-consul --client --cluster-tag-key "consul-servers" --cluster-tag-value "consul-cluster"
            
   EngineASG:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties: 
       AutoScalingGroupName: EngineASG
-      MinSize: "1"
+      MinSize: "0"
       MaxSize: "4"
-      DesiredCapacity: "1"       
+      DesiredCapacity: "0"       
       HealthCheckGracePeriod: 300
       LaunchTemplate:
         LaunchTemplateId: 
@@ -161,6 +165,10 @@ Resources:
       -   Key: Name
           PropagateAtLaunch: true
           Value: !Join ["-", [Engine, !Ref EnvironmentType]]  
+      -   Key: consul-servers
+          PropagateAtLaunch: true
+          Value: consul-cluster
+
       NotificationConfigurations:
         - TopicARN: !Ref 'NotificationTopic'
           NotificationTypes: ['autoscaling:EC2_INSTANCE_LAUNCH', 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR',

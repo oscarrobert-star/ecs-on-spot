@@ -98,9 +98,9 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties: 
       AutoScalingGroupName: BastionASG
-      MinSize: "1"
+      MinSize: "0"
       MaxSize: "1"
-      DesiredCapacity: "1"       
+      DesiredCapacity: "0"       
       HealthCheckGracePeriod: 60
       LaunchTemplate:
         LaunchTemplateId: 

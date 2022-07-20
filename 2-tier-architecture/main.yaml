@@ -182,6 +182,8 @@ Resources:
         SgId: !GetAtt SecurityGroupStack.Outputs.ElbSGId
         Subnet1: !GetAtt VpcStack.Outputs.BackEndSubnet1
         Subnet2: !GetAtt VpcStack.Outputs.BackEndSubnet2
+        SgId: !GetAtt SecurityGroupStack.Outputs.ElbSGId
+
 
   # Compute block - Define auto scaling groups here
   BridgeStack:
@@ -224,7 +226,7 @@ Resources:
       TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/engine.yaml
       TimeoutInMinutes: 10  
       Parameters:
-        AmiID: !Ref AmiID
+        AmiID: ami-08f4e5fb5d6e0199d
         EC2InstanceType: !Ref EC2InstanceType
         SgId: !GetAtt SecurityGroupStack.Outputs.EngineSGId 
         Subnet1: !GetAtt VpcStack.Outputs.BackEndSubnet1
@@ -252,16 +254,16 @@ Resources:
         KeyName: !Ref KeyName
         LoadBalancer: !GetAtt ELBStack.Outputs.LoadBalancerNames
         
-  # RedisCluster:
-  #   Type: AWS::CloudFormation::Stack
-  #   Properties:
-  #     TemplateURL:  !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/redis-cluster.yaml
-  #     TimeoutInMinutes: 10
-  #     Parameters:
-  #       VPCId: !GetAtt VpcStack.Outputs.VpcId
-  #       Subnet1: !GetAtt VpcStack.Outputs.RDSSubnet1
-  #       Subnet2: !GetAtt VpcStack.Outputs.RDSSubnet2
-  #       SgId: !GetAtt SecurityGroupStack.Outputs.CacheSecurityGroupId
+  RedisCluster:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL:  !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/redis-cluster.yaml
+      TimeoutInMinutes: 10
+      Parameters:
+        VPCId: !GetAtt VpcStack.Outputs.VpcId
+        Subnet1: !GetAtt VpcStack.Outputs.RDSSubnet1
+        Subnet2: !GetAtt VpcStack.Outputs.RDSSubnet2
+        SgId: !GetAtt SecurityGroupStack.Outputs.CacheSecurityGroupId
 
   BastionHost:
     Type: AWS::CloudFormation::Stack
@@ -284,7 +286,7 @@ Resources:
       TimeoutInMinutes: 10  
       Parameters:
         AmiID: ami-08f4e5fb5d6e0199d
-        EC2InstanceType: t3.nano
+        EC2InstanceType: t3.micro
         SgId: !GetAtt SecurityGroupStack.Outputs.configServerSGId 
         Subnet1: !GetAtt VpcStack.Outputs.BackEndSubnet1
         Subnet2: !GetAtt VpcStack.Outputs.BackEndSubnet2
@@ -301,22 +303,22 @@ Resources:
   # ######################################################################################################################
 
   # Database block - Define the RDS here
-  RDSDBStack:
-    Type: AWS::CloudFormation::Stack
-    Properties: 
-      TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/RDS.yaml
-      TimeoutInMinutes: 10  
-      Parameters:
-        DBName: !Ref DBName
-        DBAllocatedStorage: !Ref DBAllocatedStorage
-        Engine: !Ref Engine
-        DBInstanceIdentifier: !Ref DBInstanceIdentifier
-        BackupRetentionPeriod: !Ref BackupRetentionPeriod
-        RDSSubnet1ID: !GetAtt VpcStack.Outputs.RDSSubnet1
-        RDSSubnet2ID: !GetAtt VpcStack.Outputs.RDSSubnet2
-        RDSSecurityGroupID: !GetAtt SecurityGroupStack.Outputs.RDSSecurityGroupGroupId
-        DBUser: !Ref DBUser
-        DBPassword: !Ref DBPassword
+  # RDSDBStack:
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties: 
+  #     TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/RDS.yaml
+  #     TimeoutInMinutes: 10  
+  #     Parameters:
+  #       DBName: !Ref DBName
+  #       DBAllocatedStorage: !Ref DBAllocatedStorage
+  #       Engine: !Ref Engine
+  #       DBInstanceIdentifier: !Ref DBInstanceIdentifier
+  #       BackupRetentionPeriod: !Ref BackupRetentionPeriod
+  #       RDSSubnet1ID: !GetAtt VpcStack.Outputs.RDSSubnet1
+  #       RDSSubnet2ID: !GetAtt VpcStack.Outputs.RDSSubnet2
+  #       RDSSecurityGroupID: !GetAtt SecurityGroupStack.Outputs.RDSSecurityGroupGroupId
+  #       DBUser: !Ref DBUser
+  #       DBPassword: !Ref DBPassword
 
   # # Kibana - Elastic search
         

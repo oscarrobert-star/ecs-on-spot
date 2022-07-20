@@ -104,7 +104,7 @@ Resources:
   SchedulerTG:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-        Port: 8083 # change to apiservice port
+        Port: 7999 # change to apiservice port
         Name: SchedulerTG
         VpcId: 
           Ref: VPCId
@@ -266,7 +266,7 @@ Resources:
     Properties:
         # SslPolicy: string
         LoadBalancerArn: !Ref SharedALB
-        Port: 8083 # check port
+        Port: 7999 # check port
         Protocol: HTTP
         DefaultActions:
             -

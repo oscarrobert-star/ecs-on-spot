@@ -100,9 +100,9 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties: 
       AutoScalingGroupName: consulASG
-      MinSize: "1"
+      MinSize: "0"
       MaxSize: "5"
-      DesiredCapacity: "1"       
+      DesiredCapacity: "0"       
       HealthCheckGracePeriod: 300
       LaunchTemplate:
         LaunchTemplateId: 

@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: AWS Code pipeline for API Service
+Description: AWS Code pipeline for Config server server
 
 Parameters:
   ArtifactStoreS3Location:
@@ -9,7 +9,7 @@ Parameters:
 
   GitHubOwner:
     Type: String
-    Default: oscarrobert-star
+    Default: ajua-labs
 
   OAuthToken:
     Type: String
@@ -20,18 +20,17 @@ Parameters:
     Type: String
     Default: platform-configuration-server
 
-
   BranchName:
     Type: String
     Default: master       
 
   ApplicationName:
     Type: String
-    Default:  config_server
+    Default:  config
 
   DeploymentGroupName: 
     Type: String
-    Default: config_server_dpg
+    Default: config_dpg
     
   AutoScalingGroups:
     Type: String
@@ -39,7 +38,7 @@ Parameters:
 
   TargetGroupName:
     Type: String
-    Default: ConfigServerTG   
+    Default: ConfigTG  
 
   DeploymentConfigName:
     Type: String
@@ -190,7 +189,7 @@ Resources:
       TargetPipeline: !Ref Pipeline
       TargetAction: SourceAction
       TargetPipelineVersion: !GetAtt Pipeline.Version
-      RegisterWithThirdParty: 'true'
+      RegisterWithThirdParty: true
       Filters: 
       - JsonPath: "$.ref" 
         MatchEquals: refs/heads/{Branch} 
@@ -198,5 +197,5 @@ Resources:
         MatchEquals: refs/heads/FEATURE-*
       - JsonPath: "$.ref"
         MatchEquals: refs/heads/HOTFIX-*  
-      # - JsonPath: "$.ref"
-      #   MatchEquals: refs/tag/FEATURE-* 
+      - JsonPath: "$.ref"
+        MatchEquals: refs/tag/FEATURE-* 

@@ -112,10 +112,11 @@ Resources:
 
             # create log dir
             sudo mkdir /var/log/api_service
+            sudo chmod 777 /var/log/api_service
 
             # create jar directory for the jar files
-            sudo mkdir /opt/jar/ortValue KeyArn
-              # DeleteOnTermination: true
+            sudo mkdir /opt/jar/
+            sudo chmod 777 /opt/jar/
 
             # Api Service service file
             cat > /etc/systemd/system/api.service<< EOF
@@ -151,9 +152,9 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties: 
       AutoScalingGroupName: ApiServiceASG
-      MinSize: "1"
+      MinSize: "0"
       MaxSize: "4"
-      DesiredCapacity: "1"       
+      DesiredCapacity: "0"       
       HealthCheckGracePeriod: 300
       LaunchTemplate:
         LaunchTemplateId: 

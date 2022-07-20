@@ -168,9 +168,9 @@ exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties: 
       AutoScalingGroupName: VaultlASG
-      MinSize: "1"
+      MinSize: "0"
       MaxSize: "2"
-      DesiredCapacity: "1"       
+      DesiredCapacity: "0"       
       HealthCheckGracePeriod: 300
       LaunchTemplate:
         LaunchTemplateId: 

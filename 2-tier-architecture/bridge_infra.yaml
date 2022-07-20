@@ -119,9 +119,11 @@ Resources:
 
             # create log dir
             sudo mkdir /var/log/bridge
+            sudo chmod 777 /var/log/bridge
 
             # build directory (builds from CI/CD)
             sudo mkdir /opt/Bridge
+            sudo chmod 777  /opt/Bridge
 
             # S3 logging scripts
 
@@ -150,9 +152,9 @@ Resources:
     Type: AWS::AutoScaling::AutoScalingGroup
     Properties: 
       AutoScalingGroupName: BridgeASG
-      MinSize: "1"
+      MinSize: "0"
       MaxSize: "4"
-      DesiredCapacity: "1"       
+      DesiredCapacity: "0"       
       HealthCheckGracePeriod: 60
       LaunchTemplate:
         LaunchTemplateId: 
