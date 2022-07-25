@@ -2,64 +2,64 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: RDS database template for Ajua
 
 Parameters:
-  DBName: 
+  DBName:
     Type: String
     Description: Enter a database name
     Default: africa
 
-  DBAllocatedStorage: 
+  DBAllocatedStorage:
     Type: Number
     Description: The storage amount in GB you want for your database
-    Default: "5"
+    Default: "50"
 
-  DBInstanceClass: 
+  DBInstanceClass:
     Type: String
-    Description: Enter database instance class 
-    Default: db.t3.micro
+    Description: Enter database instance class
+    Default: db.t3.small
 
-  Engine: 
+  Engine:
     Type: String
     Description: Database engine you'd like to run
-    Default: postgres       
+    Default: postgres
 
-  DBInstanceIdentifier: 
+  DBInstanceIdentifier:
     Type: String
     Description: Name to idetify your db instance
-    Default: Ajua-Master
+    Default: Ajua-QA
 
   BackupRetentionPeriod:
     Type: Number
     Default: '0'
-    Description: Number of days for backup retention (max = 35)  
+    Description: Number of days for backup retention (max = 35)
 
   RDSSubnet1ID:
     Type: AWS::EC2::Subnet::Id
-    Description: Select subnets for DB. Subnets must be in same VPC  
+    Description: Select subnets for DB. Subnets must be in same VPC
 
   RDSSubnet2ID:
     Type: AWS::EC2::Subnet::Id
-    Description: Select subnets for DB. Subnets must be in same VPC    
+    Description: Select subnets for DB. Subnets must be in same VPC
 
-  RDSSecurityGroupID:  
+  RDSSecurityGroupID:
     Type: AWS::EC2::SecurityGroup::Id
-    Description: Select security group for DB. 
+    Description: Select security group for DB.
 
-  DBUser: 
+  DBUser:
     Type: String
-    Description: Enter DB username 
-    Default: testuser
+    Description: Enter DB username
+    Default: ajua
 
-  DBPassword: 
+  DBPassword:
     Type: String
-    Description: Enter database password    
-    Default: verystrongpassword
+    Description: Enter database password
+    Default: R26sOrpOUK9XlHiMl0ly
 
 Resources:
   DBSubnetGroup:
     Type: 'AWS::RDS::DBSubnetGroup'
     Properties:
       DBSubnetGroupDescription: Subnets the database belongs to
-      SubnetIds: 
+      SubnetIds:
       - !Ref RDSSubnet2ID
       - !Ref RDSSubnet1ID
       Tags:
@@ -77,14 +77,14 @@ Resources:
       DBSubnetGroupName: !Ref DBSubnetGroup
       MasterUsername: !Ref DBUser
       MasterUserPassword: !Ref DBPassword
-      VPCSecurityGroups:  
+      VPCSecurityGroups:
       - !Ref RDSSecurityGroupID
       AutoMinorVersionUpgrade: true
       BackupRetentionPeriod: !Ref BackupRetentionPeriod
       CopyTagsToSnapshot: true
       MaxAllocatedStorage: 1500
       StorageType: gp2
-    
+
     # Add read replicas here
 
 Outputs:
@@ -92,7 +92,3 @@ Outputs:
     Value: !GetAtt Master.Endpoint.Address
   DBport:
     Value: !GetAtt Master.Endpoint.Port
-
-
-
-

@@ -91,7 +91,7 @@ Parameters:
   DBName:
     Type: String
     Description: Enter a database name
-    Default: world
+    Default: africa
 
   DBAllocatedStorage:
     Type: Number
@@ -111,7 +111,7 @@ Parameters:
   DBInstanceIdentifier:
     Type: String
     Description: Name to idetify your db instance
-    Default: Ajua-Master
+    Default: Ajua-QA
 
   BackupRetentionPeriod:
     Type: Number
@@ -133,12 +133,12 @@ Parameters:
   DBUser:
     Type: String
     Description: Enter DB username
-    Default: testuser
+    Default: ajua
 
   DBPassword:
     Type: String
     Description: Enter database password
-    Default: testPas$C0d3
+    Default: R26sOrpOUK9XlHiMl0ly
 
   KeyName:
     Type: String
