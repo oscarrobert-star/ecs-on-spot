@@ -7,8 +7,8 @@ Parameters:
     Description: The CIDR block for the VPC.
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
-    Default: 10.0.0.0/16
-  
+    # Default: 10.0.0.0/16
+
   VPCId:
     Type: AWS::EC2::VPC::Id
     Description: Provide VPC id where the Security groups should be created
@@ -18,21 +18,21 @@ Parameters:
     Description: The CIDR block for the public subnet located in Availability Zone 1.
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
-    Default: 10.0.100.0/24
+    # Default: 10.0.100.0/24
 
   PrivateSubnet2Cidr:
     Type: String
     Description: The CIDR block for the public subnet located in Availability Zone 2.
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
-    Default: 10.0.101.0/24   
+    # Default: 10.0.101.0/24
 
 Resources:
   BridgeSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow http and https access into bridge
-      VpcId: 
+      VpcId:
         Ref: VPCId
       SecurityGroupIngress:
       - IpProtocol: tcp
@@ -43,45 +43,24 @@ Resources:
       - IpProtocol: tcp
         FromPort: 80
         ToPort: 80
-        CidrIp: '0.0.0.0/0'  
+        CidrIp: '0.0.0.0/0'
       - IpProtocol: tcp
         FromPort: 6379
         ToPort: 6379
-        CidrIp: !Ref VPCCidr   
+        CidrIp: !Ref VPCCidr
 
   ApiServiceSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow http and https access into bridge
-      VpcId: 
+      VpcId:
         Ref: VPCId
       SecurityGroupIngress:
       - IpProtocol: tcp
         FromPort: 0
         ToPort: 65000
         SourceSecurityGroupId: !Ref ElbSg #!GetAtt ElbSg.GroupId
-        # CidrIp: 0.0.0.0/    
-      - IpProtocol: tcp
-        FromPort: 80
-        ToPort: 80
-        CidrIp: '0.0.0.0/0'  
-      - IpProtocol: tcp
-        FromPort: 6379
-        ToPort: 6379
-        CidrIp: !Ref VPCCidr   
-
-  EngineSG:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Allow http and https access into bridge
-      VpcId: 
-        Ref: VPCId
-      SecurityGroupIngress:
-      - IpProtocol: tcp
-        FromPort: 0
-        ToPort: 65000
-        SourceSecurityGroupId: !Ref ElbSg #!GetAtt ElbSg.GroupId
-        # CidrIp: 0.0.0.0/   
+        # CidrIp: 0.0.0.0/
       - IpProtocol: tcp
         FromPort: 80
         ToPort: 80
@@ -89,52 +68,85 @@ Resources:
       - IpProtocol: tcp
         FromPort: 6379
         ToPort: 6379
-        CidrIp: !Ref VPCCidr   
+        CidrIp: !Ref VPCCidr
+      - IpProtocol: tcp
+        FromPort: 5432
+        ToPort: 5432
+        CidrIp: !Ref VPCCidr
 
-  SchedulerSG:
+  EngineSG:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow http and https access into bridge
-      VpcId: 
+      VpcId:
         Ref: VPCId
       SecurityGroupIngress:
       - IpProtocol: tcp
         FromPort: 0
         ToPort: 65000
         SourceSecurityGroupId: !Ref ElbSg #!GetAtt ElbSg.GroupId
-        # CidrIp: 0.0.0.0/           
+        # CidrIp: 0.0.0.0/
       - IpProtocol: tcp
         FromPort: 80
         ToPort: 80
-        CidrIp: '0.0.0.0/0'  
+        CidrIp: '0.0.0.0/0'
       - IpProtocol: tcp
         FromPort: 6379
         ToPort: 6379
-        CidrIp: !Ref VPCCidr  
+        CidrIp: !Ref VPCCidr
+      - IpProtocol: tcp
+        FromPort: 5432
+        ToPort: 5432
+        CidrIp: !Ref VPCCidr
+
+  SchedulerSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http and https access into bridge
+      VpcId:
+        Ref: VPCId
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 0
+        ToPort: 65000
+        SourceSecurityGroupId: !Ref ElbSg #!GetAtt ElbSg.GroupId
+        # CidrIp: 0.0.0.0/
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: '0.0.0.0/0'
+      - IpProtocol: tcp
+        FromPort: 6379
+        ToPort: 6379
+        CidrIp: !Ref VPCCidr
+      - IpProtocol: tcp
+        FromPort: 5432
+        ToPort: 5432
+        CidrIp: !Ref VPCCidr
 
   ElbSg:
     Type: AWS::EC2::SecurityGroup
     Properties:
       GroupDescription: Allow access from BridgeSecurityGroup
-      VpcId: 
+      VpcId:
         Ref: VPCId
       SecurityGroupIngress:
       - IpProtocol: tcp
         FromPort: 4041
         ToPort: 4041
         # SourceSecurityGroupId: !GetAtt ElbSg
-        CidrIp: 0.0.0.0/0  
+        CidrIp: 0.0.0.0/0
       - IpProtocol: tcp
         FromPort: 0
         ToPort: 65000
         # SourceSecurityGroupId: !GetAtt ElbSg
-        CidrIp: !Ref VPCCidr   
+        CidrIp: !Ref VPCCidr
       - IpProtocol: tcp
         FromPort: 80
         ToPort: 80
         # SourceSecurityGroupId: !GetAtt ElbSg
-        CidrIp: 0.0.0.0/0   
-        
+        CidrIp: 0.0.0.0/0
+
   CacheSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
     Properties:
@@ -149,8 +161,8 @@ Resources:
   RDSSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow access from back-end subnets to rds database 
-      VpcId: 
+      GroupDescription: Allow access from back-end subnets to rds database
+      VpcId:
         Ref: VPCId
       SecurityGroupIngress:
       - IpProtocol: tcp
@@ -162,7 +174,7 @@ Resources:
         FromPort: 5432
         ToPort: 5432
         # SourceSecurityGroupId: !GetAtt ElbSg
-        CidrIp: !Ref PrivateSubnet2Cidr   
+        CidrIp: !Ref PrivateSubnet2Cidr
 
   BastionSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -173,7 +185,7 @@ Resources:
       - IpProtocol: tcp
         FromPort: 22
         ToPort: 22
-        CidrIp: !Ref VPCCidr  
+        CidrIp: !Ref VPCCidr
 
   configServerSecurityGroup:
     Type: 'AWS::EC2::SecurityGroup'
@@ -184,23 +196,23 @@ Resources:
       - IpProtocol: tcp
         FromPort: 80
         ToPort: 80
-        CidrIp: '0.0.0.0/0'  
+        CidrIp: '0.0.0.0/0'
       - IpProtocol: tcp
         FromPort: 8000
         ToPort: 9000
-        CidrIp: '0.0.0.0/0'   
-        # CidrIp: !Ref VPCCidr 
+        CidrIp: '0.0.0.0/0'
+        # CidrIp: !Ref VPCCidr
 
-  
+
 Outputs:
   BridgeSecurityGroupId:
     Value: !GetAtt BridgeSecurityGroup.GroupId
 
   RDSSecurityGroupGroupId:
-    Value: !GetAtt RDSSecurityGroup.GroupId  
+    Value: !GetAtt RDSSecurityGroup.GroupId
 
   CacheSecurityGroupId:
-    Value: !GetAtt CacheSecurityGroup.GroupId  
+    Value: !GetAtt CacheSecurityGroup.GroupId
 
   ApiServiceSGId:
     Value: !GetAtt ApiServiceSG.GroupId
@@ -215,7 +227,7 @@ Outputs:
     Value: !GetAtt BastionSecurityGroup.GroupId
 
   configServerSGId:
-    Value: !GetAtt configServerSecurityGroup.GroupId  
+    Value: !GetAtt configServerSecurityGroup.GroupId
 
   ElbSGId:
     Value: !GetAtt ElbSg.GroupId

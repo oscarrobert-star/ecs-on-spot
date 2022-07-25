@@ -13,7 +13,7 @@ Parameters:
 
   AmiID:
     Type: AWS::EC2::Image::Id
-    Description: 'The ID of the AMI.' # uses the latest ami id  
+    Description: 'The ID of the AMI.' # uses the latest ami id
     Default: 'ami-00e7df8df28dfa791' #ami-00e7df8df28dfa791
 
   EC2InstanceType:
@@ -21,12 +21,12 @@ Parameters:
     Description: Provide the desired instance type
     Default: t3.micro
 
-  Subnet1:  
+  Subnet1:
     Type: AWS::EC2::Subnet::Id
     Description: 'The Subnet ID'
-  Subnet2:  
+  Subnet2:
     Type: AWS::EC2::Subnet::Id
-    Description: 'The Subnet ID' 
+    Description: 'The Subnet ID'
 
   SgId:
     Type: AWS::EC2::SecurityGroup::Id
@@ -34,25 +34,25 @@ Parameters:
   TargetGroupARNs:
     Type: String #should be list
     # Default: arn:aws:elasticloadbalancing:us-east-2:071046007207:targetgroup/TargetGroup1/4911679704360b5e #get from elb stack output
-  
+
   OperatorEMail:
     Description: EMail address to notify if there are any scaling operations
     Type: String
     AllowedPattern: ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)
-    ConstraintDescription: must be a valid email address.  
+    ConstraintDescription: must be a valid email address.
     Default: oscar.robert@ajua.com
 
   CPUPolicyTargetValue:
     Type: String
     Default: '80'
 
-  KeyName: 
+  KeyName:
     Type: String
-    Default: core-platform-key #this key exists in Ajua account af-south-1 region   
+    Default: core-platform-key #this key exists in Ajua account af-south-1 region
 
   LoadBalancer:
     Type: String
-    Description: Provides load balancer dns name   
+    Description: Provides load balancer dns name
 
 Resources:
   apiservicelaunchtemplate:
@@ -60,15 +60,15 @@ Resources:
     Properties:
       LaunchTemplateName: ApiService-Launch-Template
       LaunchTemplateData:
-        InstanceType: 
+        InstanceType:
           Ref: EC2InstanceType
-        ImageId: 
+        ImageId:
           Ref: AmiID
         SecurityGroupIds: #add sg heres
           - Ref: SgId
-        IamInstanceProfile: 
+        IamInstanceProfile:
           Name: !ImportValue SSMInstanceProfile
-        KeyName: !Ref KeyName 
+        KeyName: !Ref KeyName
         BlockDeviceMappings:
           - Ebs:
               VolumeSize: 15 # put a desired volume
@@ -76,8 +76,8 @@ Resources:
               DeleteOnTermination: true
               # Encrypted: true
               # KmsKeyId: !ImportValue KeyArn
-            DeviceName: /dev/xvdcz  
-        UserData: #add user data here 
+            DeviceName: /dev/xvdcz
+        UserData: #add user data here
           Fn::Base64: !Sub |
             #!/bin/bash
             exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
@@ -86,7 +86,7 @@ Resources:
             sudo apt update -y
 
             sudo apt install awscli -y
-            
+
             # configure AWS CLI for ubuntu
             mkdir ~/.aws
             cat > ~/.aws/config<< EOF
@@ -106,13 +106,13 @@ Resources:
 
             stackname=${AWS::StackName}
 
-            # Load balancer endpoint 
+            # Load balancer endpoint
             ALB_ENDPOINT=`aws cloudformation describe-stacks --region ${AWS::Region} | jq -r '.Stacks[] | select(.StackName | contains("'${AWS::StackName}'")) | .Outputs[] | select(.OutputKey | contains("LoadBalancerNames")) | .OutputValue'`
 
 
             # create log dir
             sudo mkdir /var/log/api_service
-            sudo chmod 777 /var/log/api_service
+            sudo chmod 666 -R /var/log/api_service
 
             # create jar directory for the jar files
             sudo mkdir /opt/jar/
@@ -134,7 +134,7 @@ Resources:
             [Install]
             WantedBy=multi-user.target
             EOF
-            
+
             REGION=`curl -s http://169.254.169.254/latest/meta-data/placement/region`
 
             # install code deploy agent
@@ -145,42 +145,42 @@ Resources:
             chmod +x ./install
             sudo ./install auto > /tmp/logfile
 
-            sudo apt install nginx -y 
+            sudo apt install nginx -y
             sudo systemctl start nginx.service
 
   ApiServiceASG:
     Type: AWS::AutoScaling::AutoScalingGroup
-    Properties: 
+    Properties:
       AutoScalingGroupName: ApiServiceASG
       MinSize: "0"
       MaxSize: "4"
-      DesiredCapacity: "0"       
+      DesiredCapacity: "0"
       HealthCheckGracePeriod: 300
       LaunchTemplate:
-        LaunchTemplateId: 
+        LaunchTemplateId:
           Ref: apiservicelaunchtemplate
         Version: !GetAtt apiservicelaunchtemplate.LatestVersionNumber
       NewInstancesProtectedFromScaleIn: false
       VPCZoneIdentifier:
         - Ref: Subnet1
         - Ref: Subnet2
-      TargetGroupARNs: 
+      TargetGroupARNs:
         - !Ref TargetGroupARNs
       Tags:
       -   Key: Name
           PropagateAtLaunch: true
-          Value: !Join ["-", [ApiService, !Ref EnvironmentType ]] 
+          Value: !Join ["-", [ApiService, !Ref EnvironmentType ]]
       NotificationConfigurations:
         - TopicARN: !Ref 'NotificationTopic'
           NotificationTypes: ['autoscaling:EC2_INSTANCE_LAUNCH', 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR',
             'autoscaling:EC2_INSTANCE_TERMINATE', 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR']
-      
+
   ApiServiceScalingPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:
       AutoScalingGroupName: !Ref ApiServiceASG
       PolicyType: TargetTrackingScaling
-      TargetTrackingConfiguration: 
+      TargetTrackingConfiguration:
         PredefinedMetricSpecification:
           PredefinedMetricType: ASGAverageCPUUtilization
         TargetValue: !Ref CPUPolicyTargetValue
@@ -193,5 +193,5 @@ Resources:
         Protocol: email
 
 Outputs:
-  ApiServiceASG: 
-    Value: !Ref ApiServiceASG 
+  ApiServiceASG:
+    Value: !Ref ApiServiceASG

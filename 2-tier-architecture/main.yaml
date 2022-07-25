@@ -51,26 +51,26 @@ Parameters:
     Description: The CIDR block for the public subnet located in Availability Zone 2.
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
-    Default: 172.0.101.0/24  
+    Default: 172.0.101.0/24
 
   RDSSubnet1Cidr:
     Type: String
     Description: The CIDR block for the public subnet located in Availability Zone 2.
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
-    Default: 172.0.85.0/24    
+    Default: 172.0.85.0/24
 
   RDSSubnet2Cidr:
     Type: String
     Description: The CIDR block for the public subnet located in Availability Zone 2.
     AllowedPattern: ^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\/([0-9]|[1-2][0-9]|3[0-2]))$
     ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
-    Default: 172.0.86.0/24     
+    Default: 172.0.86.0/24
 
   AmiID:
     Type: AWS::EC2::Image::Id
-    Description: 'The ID of the AMI.' # uses the latest ami id  
-    Default: 'ami-00e7df8df28dfa791' 
+    Description: 'The ID of the AMI.' # uses the latest ami id
+    Default: 'ami-00e7df8df28dfa791'
 
   EC2InstanceType:
     Type: String
@@ -81,34 +81,34 @@ Parameters:
     Description: EMail address to notify if there are any scaling operations
     Type: String
     AllowedPattern: ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)
-    ConstraintDescription: must be a valid email address.  
+    ConstraintDescription: must be a valid email address.
     Default: oscar.robert@ajua.com
 
   CPUPolicyTargetValue:
     Type: String
-    Default: '80'  
+    Default: '80'
 
-  DBName: 
+  DBName:
     Type: String
     Description: Enter a database name
     Default: world
 
-  DBAllocatedStorage: 
+  DBAllocatedStorage:
     Type: Number
     Description: The storage amount in GB you want for your database
     Default: "50"
 
-  DBInstanceClass: 
+  DBInstanceClass:
     Type: String
-    Description: Enter database instance class 
+    Description: Enter database instance class
     Default: db.t3.small
 
-  Engine: 
+  Engine:
     Type: String
     Description: Database engine you'd like to run
-    Default: postgres       
+    Default: postgres
 
-  DBInstanceIdentifier: 
+  DBInstanceIdentifier:
     Type: String
     Description: Name to idetify your db instance
     Default: Ajua-Master
@@ -116,36 +116,36 @@ Parameters:
   BackupRetentionPeriod:
     Type: Number
     Default: '0'
-    Description: Number of days for backup retention (max = 35)  
+    Description: Number of days for backup retention (max = 35)
 
   # RDSSubnet1ID:
   #   Type: AWS::EC2::Subnet::Id
-  #   Description: Select subnets for DB. Subnets must be in same VPC  
+  #   Description: Select subnets for DB. Subnets must be in same VPC
 
   # RDSSubnet2ID:
   #   Type: AWS::EC2::Subnet::Id
-  #   Description: Select subnets for DB. Subnets must be in same VPC    
+  #   Description: Select subnets for DB. Subnets must be in same VPC
 
-  # RDSSecurityGroup:  
+  # RDSSecurityGroup:
   #   Type: AWS::EC2::SecurityGroup::Id
-  #   Description: Select security group for DB. 
+  #   Description: Select security group for DB.
 
-  DBUser: 
+  DBUser:
     Type: String
-    Description: Enter DB username 
+    Description: Enter DB username
     Default: testuser
 
-  DBPassword: 
+  DBPassword:
     Type: String
-    Description: Enter database password    
-    Default: testPas$C0d3  
+    Description: Enter database password
+    Default: testPas$C0d3
 
-  KeyName: 
+  KeyName:
     Type: String
-    Default: core-platform-key    
+    Default: core-platform-key
 
 
-Resources: 
+Resources:
   VpcStack:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -168,7 +168,7 @@ Resources:
     Properties:
       TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/security-groups.yaml
       TimeoutInMinutes: 10
-      Parameters: 
+      Parameters:
         VPCId: !GetAtt VpcStack.Outputs.VpcId
 
   # create elb stack here
@@ -176,7 +176,7 @@ Resources:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/elb.yaml
-      TimeoutInMinutes: 10  
+      TimeoutInMinutes: 10
       Parameters:
         VPCId: !GetAtt VpcStack.Outputs.VpcId
         SgId: !GetAtt SecurityGroupStack.Outputs.ElbSGId
@@ -188,9 +188,9 @@ Resources:
   # Compute block - Define auto scaling groups here
   BridgeStack:
     Type: AWS::CloudFormation::Stack
-    Properties: 
+    Properties:
       TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/bridge_infra.yaml
-      TimeoutInMinutes: 10  
+      TimeoutInMinutes: 10
       Parameters:
         AmiID: !Ref AmiID
         EC2InstanceType: !Ref EC2InstanceType
@@ -204,13 +204,13 @@ Resources:
 
   ApiServiceStack:
     Type: AWS::CloudFormation::Stack
-    Properties: 
+    Properties:
       TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/api-service.yaml
-      TimeoutInMinutes: 10  
+      TimeoutInMinutes: 10
       Parameters:
         AmiID: !Ref AmiID
         EC2InstanceType: !Ref EC2InstanceType
-        SgId: !GetAtt SecurityGroupStack.Outputs.ApiServiceSGId 
+        SgId: !GetAtt SecurityGroupStack.Outputs.ApiServiceSGId
         Subnet1: !GetAtt VpcStack.Outputs.BackEndSubnet1
         Subnet2: !GetAtt VpcStack.Outputs.BackEndSubnet2
         OperatorEMail: !Ref OperatorEMail
@@ -222,13 +222,13 @@ Resources:
 
   EngineStack:
     Type: AWS::CloudFormation::Stack
-    Properties: 
+    Properties:
       TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/engine.yaml
-      TimeoutInMinutes: 10  
+      TimeoutInMinutes: 10
       Parameters:
         AmiID: ami-08f4e5fb5d6e0199d
         EC2InstanceType: !Ref EC2InstanceType
-        SgId: !GetAtt SecurityGroupStack.Outputs.EngineSGId 
+        SgId: !GetAtt SecurityGroupStack.Outputs.EngineSGId
         Subnet1: !GetAtt VpcStack.Outputs.BackEndSubnet1
         Subnet2: !GetAtt VpcStack.Outputs.BackEndSubnet2
         OperatorEMail: !Ref OperatorEMail
@@ -239,13 +239,13 @@ Resources:
 
   SchedulerStack:
     Type: AWS::CloudFormation::Stack
-    Properties: 
-      TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/scheduler.yaml 
-      TimeoutInMinutes: 10  
+    Properties:
+      TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/scheduler.yaml
+      TimeoutInMinutes: 10
       Parameters:
         AmiID: !Ref AmiID
         EC2InstanceType: !Ref EC2InstanceType
-        SgId: !GetAtt SecurityGroupStack.Outputs.SchedulerSGId 
+        SgId: !GetAtt SecurityGroupStack.Outputs.SchedulerSGId
         Subnet1: !GetAtt VpcStack.Outputs.BackEndSubnet1
         Subnet2: !GetAtt VpcStack.Outputs.BackEndSubnet2
         OperatorEMail: !Ref OperatorEMail
@@ -253,7 +253,7 @@ Resources:
         TargetGroupARNs: !GetAtt ELBStack.Outputs.SchedulerTGArn
         KeyName: !Ref KeyName
         LoadBalancer: !GetAtt ELBStack.Outputs.LoadBalancerNames
-        
+
   RedisCluster:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -273,26 +273,26 @@ Resources:
       Parameters:
         AmiID: !Ref AmiID
         EC2InstanceType: t3.nano
-        SgId: !GetAtt SecurityGroupStack.Outputs.BastionSGId 
+        SgId: !GetAtt SecurityGroupStack.Outputs.BastionSGId
         Subnet1: !GetAtt VpcStack.Outputs.FrontEndSubnet1
         Subnet2: !GetAtt VpcStack.Outputs.FrontEndSubnet2
         OperatorEMail: !Ref OperatorEMail
         KeyName: !Ref KeyName
 
-  ConfigServer: 
+  ConfigServer:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/config-server.yaml 
-      TimeoutInMinutes: 10  
+      TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/config-server.yaml
+      TimeoutInMinutes: 10
       Parameters:
         AmiID: ami-08f4e5fb5d6e0199d
         EC2InstanceType: t3.micro
-        SgId: !GetAtt SecurityGroupStack.Outputs.configServerSGId 
+        SgId: !GetAtt SecurityGroupStack.Outputs.configServerSGId
         Subnet1: !GetAtt VpcStack.Outputs.BackEndSubnet1
         Subnet2: !GetAtt VpcStack.Outputs.BackEndSubnet2
         OperatorEMail: !Ref OperatorEMail
-        CPUPolicyTargetValue: !Ref CPUPolicyTargetValue 
-        KeyName: !Ref KeyName  
+        CPUPolicyTargetValue: !Ref CPUPolicyTargetValue
+        KeyName: !Ref KeyName
         TargetGroupARNs: !GetAtt ELBStack.Outputs.ConfigTGArn
 
   # ############################################ Vault and Consul ########################################################
@@ -303,25 +303,25 @@ Resources:
   # ######################################################################################################################
 
   # Database block - Define the RDS here
-  # RDSDBStack:
-  #   Type: AWS::CloudFormation::Stack
-  #   Properties: 
-  #     TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/RDS.yaml
-  #     TimeoutInMinutes: 10  
-  #     Parameters:
-  #       DBName: !Ref DBName
-  #       DBAllocatedStorage: !Ref DBAllocatedStorage
-  #       Engine: !Ref Engine
-  #       DBInstanceIdentifier: !Ref DBInstanceIdentifier
-  #       BackupRetentionPeriod: !Ref BackupRetentionPeriod
-  #       RDSSubnet1ID: !GetAtt VpcStack.Outputs.RDSSubnet1
-  #       RDSSubnet2ID: !GetAtt VpcStack.Outputs.RDSSubnet2
-  #       RDSSecurityGroupID: !GetAtt SecurityGroupStack.Outputs.RDSSecurityGroupGroupId
-  #       DBUser: !Ref DBUser
-  #       DBPassword: !Ref DBPassword
+  RDSDBStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${S3BucketName}.s3.amazonaws.com/IaC/cf/RDS.yaml
+      TimeoutInMinutes: 10
+      Parameters:
+        DBName: !Ref DBName
+        DBAllocatedStorage: !Ref DBAllocatedStorage
+        Engine: !Ref Engine
+        DBInstanceIdentifier: !Ref DBInstanceIdentifier
+        BackupRetentionPeriod: !Ref BackupRetentionPeriod
+        RDSSubnet1ID: !GetAtt VpcStack.Outputs.RDSSubnet1
+        RDSSubnet2ID: !GetAtt VpcStack.Outputs.RDSSubnet2
+        RDSSecurityGroupID: !GetAtt SecurityGroupStack.Outputs.RDSSecurityGroupGroupId
+        DBUser: !Ref DBUser
+        DBPassword: !Ref DBPassword
 
   # # Kibana - Elastic search
-        
+
 
 Outputs:
   ELBEndpoint:
