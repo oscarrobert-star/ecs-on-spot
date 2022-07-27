@@ -13,7 +13,7 @@ Parameters:
 
   AmiID:
     Type: AWS::EC2::Image::Id
-    Description: 'The ID of the AMI.' # uses the latest ami id  
+    Description: 'The ID of the AMI.' # uses the latest ami id
     Default: 'ami-00e7df8df28dfa791' #ami-00e7df8df28dfa791
 
   EC2InstanceType:
@@ -21,38 +21,38 @@ Parameters:
     Description: Provide the desired instance type
     Default: t3.micro
 
-  Subnet1:  
+  Subnet1:
     Type: AWS::EC2::Subnet::Id
     Description: 'The Subnet ID'
-  Subnet2:  
+  Subnet2:
     Type: AWS::EC2::Subnet::Id
-    Description: 'The Subnet ID' 
+    Description: 'The Subnet ID'
 
   SgId:
     Type: AWS::EC2::SecurityGroup::Id
 
   TargetGroupARNs:
     Type: String #should be list
-    
+
   OperatorEMail:
     Description: EMail address to notify if there are any scaling operations
     Type: String
     AllowedPattern: ([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)
-    ConstraintDescription: must be a valid email address.  
+    ConstraintDescription: must be a valid email address.
     Default: oscar.robert@ajua.com
 
   CPUPolicyTargetValue:
     Type: String
-    Default: '80'  
+    Default: '80'
 
-  KeyName: 
+  KeyName:
     Type: String
-    Default: core-platform-key #this key exists in Ajua account af-south-1 region   
+    Default: core-platform-key #this key exists in Ajua account af-south-1 region
 
   LoadBalancer:
     Type: String
-    Description: Provides load balancer dns name  
-  
+    Description: Provides load balancer dns name
+
 
 Resources:
   schedulerlaunchtemplate:
@@ -60,13 +60,13 @@ Resources:
     Properties:
       LaunchTemplateName: scheduler-Launch-Template
       LaunchTemplateData:
-        InstanceType: 
+        InstanceType:
           Ref: EC2InstanceType
-        ImageId: 
+        ImageId:
           Ref: AmiID
         SecurityGroupIds: #add sg heres
           - Ref: SgId
-        IamInstanceProfile: 
+        IamInstanceProfile:
           Name: !ImportValue SSMInstanceProfile
         KeyName: !Ref KeyName  #add key pair name here
         BlockDeviceMappings:
@@ -76,15 +76,15 @@ Resources:
               DeleteOnTermination: true
               # Encrypted: true
               # KmsKeyId: !ImportValue KeyArn
-            DeviceName: /dev/xvdcz  
-        UserData: #add user data here 
+            DeviceName: /dev/xvdcz
+        UserData: #add user data here
           Fn::Base64: !Sub |
             #!/bin/bash
             exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
             # install updates
             # yum update -y #for centos
             sudo apt update -y
-            
+
             # configure AWS CLI for ec2-user
             mkdir ~/.aws
             cat > ~/.aws/config<< EOF
@@ -102,12 +102,12 @@ Resources:
 
             # create log dirAWS::EC2::LaunchTemplate
             sudo mkdir /var/log/scheduler
-            sudo chmod 777 /var/log/scheduler
+            sudo chmod 777 -R /var/log/scheduler
 
             # create jar directory for the jar files
             sudo mkdir /opt/jar/
-            sudo chmod 777 /opt/jar/
-            
+            sudo chmod 777 -R /opt/jar/
+
             # Scheduler service file
             cat > /etc/systemd/system/scheduler.service<< EOF
             [Unit]
@@ -138,47 +138,47 @@ Resources:
             chmod +x ./install
             sudo ./install auto > /tmp/logfile
 
-            # Install nginx 
-            sudo apt install nginx -y 
+            # Install nginx
+            sudo apt install nginx -y
             sudo systemctl start nginx.service
 
-            
+
   schedulerASG:
     Type: AWS::AutoScaling::AutoScalingGroup
-    Properties: 
+    Properties:
       AutoScalingGroupName: schedulerASG
       MinSize: "0"
       MaxSize: "4"
-      DesiredCapacity: "0"        
+      DesiredCapacity: "0"
       HealthCheckGracePeriod: 300
       LaunchTemplate:
-        LaunchTemplateId: 
+        LaunchTemplateId:
           Ref: schedulerlaunchtemplate
         Version: !GetAtt schedulerlaunchtemplate.LatestVersionNumber
-      NewInstancesProtectedFromScaleIn: false  
+      NewInstancesProtectedFromScaleIn: false
       VPCZoneIdentifier:
         - Ref: Subnet1
         - Ref: Subnet2
-      TargetGroupARNs: 
+      TargetGroupARNs:
         - !Ref TargetGroupARNs
       Tags:
       -   Key: Name
           PropagateAtLaunch: true
-          Value: !Join ["-", [scheduler, !Ref EnvironmentType ]] 
+          Value: !Join ["-", [scheduler, !Ref EnvironmentType ]]
       NotificationConfigurations:
         - TopicARN: !Ref 'NotificationTopic'
           NotificationTypes: ['autoscaling:EC2_INSTANCE_LAUNCH', 'autoscaling:EC2_INSTANCE_LAUNCH_ERROR',
             'autoscaling:EC2_INSTANCE_TERMINATE', 'autoscaling:EC2_INSTANCE_TERMINATE_ERROR']
-      
+
   schedulerScalingPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
     Properties:
       AutoScalingGroupName: !Ref schedulerASG
       PolicyType: TargetTrackingScaling
-      TargetTrackingConfiguration: 
+      TargetTrackingConfiguration:
         PredefinedMetricSpecification:
           PredefinedMetricType: ASGAverageCPUUtilization
-        TargetValue: !Ref CPUPolicyTargetValue  
+        TargetValue: !Ref CPUPolicyTargetValue
 
   NotificationTopic:
     Type: AWS::SNS::Topic
@@ -186,4 +186,3 @@ Resources:
       Subscription:
       - Endpoint: !Ref 'OperatorEMail'
         Protocol: email
-      

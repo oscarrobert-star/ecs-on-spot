@@ -112,11 +112,11 @@ Resources:
 
             # create log dir
             sudo mkdir /var/log/api_service
-            sudo chmod 666 -R /var/log/api_service
+            sudo chmod 777 -R /var/log/api_service
 
             # create jar directory for the jar files
             sudo mkdir /opt/jar/
-            sudo chmod 777 /opt/jar/
+            sudo chmod 777 -R /opt/jar/
 
             # Api Service service file
             cat > /etc/systemd/system/api.service<< EOF

@@ -101,11 +101,11 @@ Resources:
 
             # create log dir
             sudo mkdir /var/log/Engine3
-            sudo chmod 777 /var/log/Engine3
+            sudo chmod 777 -R /var/log/Engine3
 
             # create jar directory for the jar files
             sudo mkdir /opt/jar/
-            sudo chmod 666 -R /var/log/Engine3
+            sudo chmod 777 -R /opt/jar/
 
             # Engine service file
             cat > /etc/systemd/system/engine.service<< EOF
