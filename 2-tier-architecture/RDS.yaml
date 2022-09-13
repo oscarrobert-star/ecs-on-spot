@@ -74,6 +74,7 @@ Resources:
       AllocatedStorage: !Ref DBAllocatedStorage
       DBInstanceClass: !Ref DBInstanceClass
       Engine: !Ref Engine
+      EngineVersion: "10"
       DBSubnetGroupName: !Ref DBSubnetGroup
       MasterUsername: !Ref DBUser
       MasterUserPassword: !Ref DBPassword

@@ -170,6 +170,9 @@ Resources:
       TimeoutInMinutes: 10
       Parameters:
         VPCId: !GetAtt VpcStack.Outputs.VpcId
+        PrivateSubnet1Cidr: !Ref PrivateSubnet1Cidr
+        PrivateSubnet2Cidr: !Ref PrivateSubnet2Cidr
+        VPCCidr: !Ref VPCCidr
 
   # create elb stack here
   ELBStack:
