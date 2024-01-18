@@ -32,6 +32,19 @@ resource "aws_subnet" "private_subnets" {
   enable_resource_name_dns_aaaa_record_on_launch = true
 
   tags = {
-    Name = "private-subnet-${count.index + 1}"
+    Name = "private-subnet-${count.index + 4}"
   }
 }
+
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "main-igw"
+  }
+}
+
+resource "aws_vpc_ipv6_association" "main" {
+  vpc_id = aws_vpc.main.id
+}
+
