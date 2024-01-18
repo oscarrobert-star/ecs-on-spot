@@ -44,7 +44,4 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
-resource "aws_vpc_ipv6_association" "main" {
-  vpc_id = aws_vpc.main.id
-}
 
