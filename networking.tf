@@ -1,3 +1,6 @@
+/*********************
+      VPC
+**********************/
 resource "aws_vpc" "main" {
   cidr_block                       = "10.0.0.0/16"
   instance_tenancy                 = "default"
@@ -8,6 +11,9 @@ resource "aws_vpc" "main" {
   }
 }
 
+/*********************
+      Subnets
+**********************/
 resource "aws_subnet" "public_subnets" {
   count = 3
 
@@ -36,6 +42,9 @@ resource "aws_subnet" "private_subnets" {
   }
 }
 
+/*********************
+      IGWS
+**********************/
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
@@ -44,4 +53,48 @@ resource "aws_internet_gateway" "main" {
   }
 }
 
+resource "aws_egress_only_internet_gateway" "egress" {
+  vpc_id = aws_vpc.main.id
+  tags = {
+    Name = "egress-only-igw"
+  }
+}
 
+/*********************
+      Route table
+**********************/
+resource "aws_route_table" "public_rt" {
+  vpc_id = aws_vpc.main.id 
+
+  route {
+    ipv6_cidr_block        = "::/0"
+    gateway_id = aws_internet_gateway.main.id
+  }
+
+  tags = {
+    Name = "Public route table"
+  }
+}
+/*********************
+      Routes
+**********************/
+resource "aws_route" "egress_only" {
+  route_table_id              = aws_vpc.main.main_route_table_id
+  destination_ipv6_cidr_block = "::/0"
+  egress_only_gateway_id      = aws_egress_only_internet_gateway.egress.id
+}
+
+/*********************
+  Subnet Associations
+**********************/
+resource "aws_route_table_association" "private_subnet_assoc" {
+  count = 3
+  subnet_id      = "${element(aws_subnet.private_subnets.*.id, count.index + 4)}"
+  route_table_id = aws_vpc.main.main_route_table_id
+}
+
+resource "aws_route_table_association" "public_subnet_assoc" {
+  count = 3
+  subnet_id      = "${element(aws_subnet.public_subnets.*.id, count.index)}"
+  route_table_id = aws_route_table.public_rt.id
+}
