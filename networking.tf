@@ -14,15 +14,19 @@ resource "aws_vpc" "main" {
 /*********************
       Subnets
 **********************/
+data "aws_availability_zones" "available" {}
+
 resource "aws_subnet" "public_subnets" {
   count = 3
 
   vpc_id                                         = aws_vpc.main.id
   cidr_block                                     = cidrsubnet(aws_vpc.main.cidr_block, 8, count.index + 1)
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch                        = true
   assign_ipv6_address_on_creation                = true
   ipv6_cidr_block                                = cidrsubnet(aws_vpc.main.ipv6_cidr_block, 8, count.index + 1)
   enable_resource_name_dns_aaaa_record_on_launch = true
+
+  availability_zone = element(data.aws_availability_zones.available.names, count.index)
 
   tags = {
     Name = "public-subnet-${count.index + 1}"
@@ -37,6 +41,8 @@ resource "aws_subnet" "private_subnets" {
   assign_ipv6_address_on_creation                = true
   ipv6_cidr_block                                = cidrsubnet(aws_vpc.main.ipv6_cidr_block, 8, count.index + 4)
   enable_resource_name_dns_aaaa_record_on_launch = true
+
+  availability_zone = element(data.aws_availability_zones.available.names, count.index)
 
   tags = {
     Name = "private-subnet-${count.index + 4}"
@@ -70,6 +76,11 @@ resource "aws_route_table" "public_rt" {
   route {
     ipv6_cidr_block = "::/0"
     gateway_id      = aws_internet_gateway.main.id
+  }
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.main.id
   }
 
   tags = {
