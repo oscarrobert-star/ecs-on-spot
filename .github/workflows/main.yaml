@@ -26,12 +26,13 @@ jobs:
 
     - name: Terraform Init
       run: terraform init
+    - name: Terraform Destroy
+      run: terraform destroy -auto-approve
+    # - name: Terraform Plan
+    #   run: terraform plan -out=tfplan
 
-    - name: Terraform Plan
-      run: terraform plan -out=tfplan
+    # - name: Terraform Apply
+    #   run: terraform apply -auto-approve tfplan
 
-    - name: Terraform Apply
-      run: terraform apply -auto-approve tfplan
-
-    - name: Clean up Terraform files
-      run: rm -rf .terraform terraform.tfplan
+    # - name: Clean up Terraform files
+    #   run: rm -rf .terraform terraform.tfplan
